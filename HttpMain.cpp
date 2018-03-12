@@ -4,22 +4,18 @@
 #include "http/response.h"
 
 
-class DianZiCaiResult : public base::http::HttpClientEventHandler
+class TestHttpEventHandler : public base::http::HttpClientEventHandler
 {
 public:
 
     virtual void OnHttpClose(){}
     virtual void OnHttpResponse(base::http::HttpStatusCode code, const std::string& body)
     {
-        CPToHSendGameResultReqMsg resultMsg(6);
-        resultMsg.iGameID = 6;
 
-        GoalMemCpy(resultMsg.szValue, sizeof(resultMsg.szValue), body.c_str(), body.length());
-        CHttpServer::Instance().SendDataToHallServer((const BYTE*)(&resultMsg), sizeof(resultMsg));
     }
 };
 
-DianZiCaiResult g_DianZiCaiResult;
+TestHttpEventHandler g_TestHttpEventHandler;
 
 int main(int argc, char* argv[])
 {
@@ -34,7 +30,7 @@ int main(int argc, char* argv[])
             formParams.emplace_back("name", "tt");
             formParams.emplace_back("format", "json");
 
-            base::http::HttpClient::instance()->GetAsync("http://example.com/test", formParams, &g_DianZiCaiResult);
+            base::http::HttpClient::instance()->GetAsync("http://example.com/test", formParams, &g_TestHttpEventHandler);
         };
 
         UnsafeTimerInst.AddStdFunctionTimeRepeat(1, getasync, 5, -1);
@@ -49,8 +45,6 @@ int main(int argc, char* argv[])
     });
 
     base::http::HttpServer::instance()->Start("0.0.0.0", m_iLocalPort);
-
-    CConfig::Instance()->ShowLog(4, "HttpServer Start Succeed");
 
     base::Dispatcher::instance().Dispatch();
 

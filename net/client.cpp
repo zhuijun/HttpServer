@@ -1,7 +1,6 @@
 ﻿#include "client.h"
 #include "utils.h"
 #include "utils_string.h"
-#include "../http/hostnameresolver.h"
 #include <cerrno>
 #include <stdint.h>
 
@@ -27,14 +26,7 @@ namespace base
 
         void Client::ConnectDomain(const char* domain, int port)
         {
-            http::HostnameResolver resolver(domain);
-            resolver.DoResolver();
-            string ip = resolver.result_.getIP();
-            if (ip.empty()) {
-                OnConnectFail(-1, "can not resolve domain");
-            } else {
-                ConnectIp(ip.c_str(), port);
-            }
+            return;
         }
 
         void Client::Connect(const char* host, int port)

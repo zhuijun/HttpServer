@@ -36,8 +36,11 @@ namespace base
             virtual void OnHttpResponse(HttpStatusCode code, const std::string& body) = 0;
         };
 
-        class HttpConnection;
+        typedef std::function<void()> HttpCloseCallBack;
+        typedef std::function<void(HttpStatusCode code, const std::string& body)> HttpResponseCallBack;
 
+        class HttpConnection;
+        class HttpClientImpl;
         class HttpClient
         {
         public:
@@ -45,7 +48,7 @@ namespace base
             static void Destroy();
             static HttpClient* instance();
 
-            void ResolveHostname(const std::string& hostname);
+            void ResolveHostname(const std::string& hostname, std::function<void(const DnsRecord& result)> callback);
 
             enum class Error
             {
@@ -53,17 +56,16 @@ namespace base
                 BAD_URL,
             };
 
-            Error GetAsync(const std::string& url, const std::vector<std::pair<std::string, std::string>>& formParams, HttpClientEventHandler* evtHandler);
-            Error PostFormAsync(const std::string& url, const std::vector<std::pair<std::string, std::string>>& formParams, HttpClientEventHandler* evtHandler);
-            Error PostJsonAsync(const std::string& url, const std::string& json, HttpClientEventHandler* evtHandler);
+            Error GetAsync(const std::string& url, const std::vector<std::pair<std::string, std::string>>& formParams, HttpResponseCallBack onResponse);
+            Error PostFormAsync(const std::string& url, const std::vector<std::pair<std::string, std::string>>& formParams, HttpResponseCallBack onResponse);
+            Error PostJsonAsync(const std::string& url, const std::string& json, HttpResponseCallBack onResponse);
 
         private:
-            HttpClient(){}
+            HttpClient();
             virtual ~HttpClient();
 
             std::unordered_map<std::string, DnsRecord> dns_cache_;
-            std::vector<HttpConnection*> connections_;
-            base::AutoObserver autoObserver_;
+            HttpClientImpl * m_impl = nullptr;
         };
     }
 }

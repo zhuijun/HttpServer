@@ -3,20 +3,26 @@
 
 
 #include "httpclient.h"
+#include "../thread/task.h"
 
 namespace base
 {
     namespace http
     {
-        class HostnameResolver
+        class HostnameResolver : public base::thread::AsyncTask
         {
         public:
-            HostnameResolver(const std::string& host);
+            HostnameResolver(const std::string& host, std::function<void(DnsRecord& result)> callback);
 
             virtual void DoResolver();
 
+        private:
+            virtual void doInWorkThread();
+            virtual void onPostExecute();
+
             std::string host_;
             DnsRecord result_;
+            std::function<void(DnsRecord& result)> callback_;
         };
     }
 }

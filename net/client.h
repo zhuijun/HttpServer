@@ -92,7 +92,7 @@ namespace base
             bool connect_pending_;
 
             char sendq_[1024];
-            char recvq_[1024];
+            char recvq_[8192];
             BaseBuffer sendBuffer;
             BaseBuffer recvBuffer;
         };

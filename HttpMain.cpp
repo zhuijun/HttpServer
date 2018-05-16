@@ -2,7 +2,7 @@
 #include "http/httpclient.h"
 #include "http/httpserver.h"
 #include "http/response.h"
-
+#include "base/TimerMgr.h"
 
 class TestHttpEventHandler : public base::http::HttpClientEventHandler
 {

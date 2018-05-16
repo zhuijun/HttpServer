@@ -10,6 +10,7 @@
 #include "../net/client.h"
 #include "../net/dispatcher.h"
 #include "../net/BaseBuffer.h"
+#include "../thread/threadpool.h"
 
 namespace base
 {
@@ -23,8 +24,13 @@ namespace base
         class HttpConnection : public net::Client
         {
         public:
-            HttpConnection(HttpClientEventHandler* handler)
-                : handler_(handler) {
+            struct EventHandler {
+                virtual void OnHttpRequest(HttpConnection* connection) = 0;
+                virtual void OnConnectionClose(HttpConnection* connection) = 0;
+            };
+
+            HttpConnection(const HttpResponseCallBack& onResponse, EventHandler* evtHandler)
+                : onResponse_(onResponse), m_eventHandler(evtHandler) {
                 //SAFE_RETAIN(handler_);
                 http_parser_init(&parser_, HTTP_RESPONSE);
                 parser_.data = this;
@@ -88,10 +94,13 @@ namespace base
                 {
                     size_t r = http_parser_execute(&parser_, &settings, recvBuffer.Data(), recvBuffer.DataSize());
                     if (r != recvBuffer.DataSize()) {
-                        if (handler_) {
-                            handler_->OnHttpResponse(HttpStatusCode::Not_Acceptable, HTTP_STATUS_STRING(HttpStatusCode::Not_Acceptable));
+                        //if (handler_) {
+                        //    handler_->OnHttpResponse(HttpStatusCode::Not_Acceptable, HTTP_STATUS_STRING(HttpStatusCode::Not_Acceptable));
+                        //}
+                        if (onResponse_)
+                        {
+                            onResponse_(HttpStatusCode::Not_Acceptable, HTTP_STATUS_STRING(HttpStatusCode::Not_Acceptable));
                         }
-                        //Close();
                         //return;
                     }
                     recvBuffer.Removed(r);
@@ -100,32 +109,60 @@ namespace base
             }
 
             void OnConnect() override {
+                m_lastActiveTs = g_dispatcher->GetTimestampCache();
+                if (m_eventHandler)
+                {
+                    m_eventHandler->OnHttpRequest(this);
+                }
                 Flush();
             }
 
             void OnConnectFail(int eno, const char* reason) override {
-                if (handler_ ) {
-                    handler_->OnHttpResponse(HttpStatusCode::Request_Timeout, HTTP_STATUS_STRING(HttpStatusCode::Request_Timeout));
+                //if (handler_ ) {
+                //    handler_->OnHttpResponse(HttpStatusCode::Request_Timeout, HTTP_STATUS_STRING(HttpStatusCode::Request_Timeout));
+                //}
+                if (onResponse_)
+                {
+                    onResponse_(HttpStatusCode::Request_Timeout, HTTP_STATUS_STRING(HttpStatusCode::Request_Timeout));
+                }
+            }
+
+            void OnTimeOut() {
+                if (onResponse_)
+                {
+                    onResponse_(HttpStatusCode::Request_Timeout, HTTP_STATUS_STRING(HttpStatusCode::Request_Timeout));
                 }
             }
 
             void OnClose() override {
-                if (handler_ ) {
-                    handler_->OnHttpClose();
+                if (m_eventHandler)
+                {
+                    m_eventHandler->OnConnectionClose(this);
                 }
+                //if (handler_ ) {
+                //    handler_->OnHttpClose();
+                //}
                 Release();
             }
 
             void Flush() {
                 InvokeSend();
             }
+
+            int64_t lastActiveTs() const {
+                return m_lastActiveTs;
+            }
+
         private:
             bool m_hasHead = false;
             bool m_hasBody = false;
 
             http_parser parser_;
             std::string resp_body_;
-            HttpClientEventHandler* handler_;
+            //HttpClientEventHandler* handler_;
+            HttpResponseCallBack onResponse_;
+            EventHandler* m_eventHandler = nullptr;
+            int64_t m_lastActiveTs = 0;
 
         public:
             static int on_message_begin_cb(http_parser* parser) {
@@ -158,10 +195,15 @@ namespace base
 
             static int on_message_complete_cb(http_parser* parser) {
                 HttpConnection* client = static_cast<HttpConnection*>(parser->data);
-                if (client->handler_) {
-                    client->handler_->OnHttpResponse((HttpStatusCode)parser->status_code, client->resp_body_.c_str());
+                //if (client->handler_) {
+                //    client->handler_->OnHttpResponse((HttpStatusCode)parser->status_code, client->resp_body_.c_str());
+                //}
+                if (client->onResponse_)
+                {
+                    client->onResponse_((HttpStatusCode)parser->status_code, client->resp_body_.c_str());
                 }
-                printf("%s\n", client->resp_body_.c_str());
+                //printf("%s\n", client->resp_body_.c_str());
+                printf("%s %u\n", "on_message_complete_cb", parser->status_code);
                 client->Close();
                 return 0;
             }
@@ -180,6 +222,51 @@ namespace base
             }
         } _settings_initializer;
 
+
+        class HttpClientImpl : public HttpConnection::EventHandler
+        {
+        public:
+            HttpClientImpl(){}
+            ~HttpClientImpl()
+            {
+                UnsafeTimerInst.RemoveFunction(m_aliveTimer);
+            }
+
+            virtual void OnHttpRequest(HttpConnection* connection) override
+            {
+                m_connections.push_back(connection);
+            }
+
+            virtual void OnConnectionClose(HttpConnection* connection) override
+            {
+                m_connections.remove(connection);
+            }
+
+            void Start() {
+                m_aliveTimer = UnsafeTimerInst.AddStdFunctionTimeRepeat(0, bind(&HttpClientImpl::CheckConnectionIsAlive, this), 30);
+            }
+
+        private:
+            void CheckConnectionIsAlive() {
+                int64_t now = g_dispatcher->GetTimestampCache();
+                for (HttpConnection* conn : m_connections)
+                {
+                    if (now - conn->lastActiveTs() > 30) {
+                        conn->OnTimeOut();
+                        conn->Close();
+                    }
+                }
+            }
+            std::list<HttpConnection*> m_connections;
+            uint32_t m_aliveTimer = 0;
+        };
+
+
+        HttpClient::HttpClient()
+        {
+            m_impl = new HttpClientImpl();
+            m_impl->Start();
+        }
 
         HttpClient::~HttpClient()
         {
@@ -205,25 +292,30 @@ namespace base
             return s_instance;
         }
 
-        void HttpClient::ResolveHostname(const std::string& hostname)
+        void HttpClient::ResolveHostname(const std::string& hostname, std::function<void(const DnsRecord& result)> callback)
         {
              //find from cache
             auto it = dns_cache_.find(hostname);
             if (it != dns_cache_.end()) {
                 const DnsRecord& record = it->second;
                 if (g_dispatcher->GetTimestampCache() - record.createTs < 30 * 60) {
+                    callback(record);
                     return;
                 }
             }
 
-            http::HostnameResolver resolver(hostname);
-            resolver.DoResolver();
-            if (!resolver.result_.empty()) {
-                dns_cache_[resolver.result_.hostname] = resolver.result_;
-            }
-            else {
-                dns_cache_.erase(resolver.result_.hostname);
-            }
+            auto callback2 = [this, callback](base::http::DnsRecord& result){
+                if (!result.empty()) {
+                    dns_cache_[result.hostname] = result;
+                }
+                else {
+                    dns_cache_.erase(result.hostname);
+                }
+                callback(result);
+            };
+
+            std::shared_ptr<http::HostnameResolver> resolver(new http::HostnameResolver(hostname, callback2));
+            base::thread::ThreadPool::getInstance()->queueUserWorkItem(resolver);
         }
 
         static HttpClient::Error parseUrl(const string& url, string& host, string& path, int* port)
@@ -252,7 +344,7 @@ namespace base
             return HttpClient::Error::OK;
         }
 
-        HttpClient::Error HttpClient::GetAsync(const string& url, const vector< pair< string, string > >& formParams, HttpClientEventHandler* evt_handler)
+        HttpClient::Error HttpClient::GetAsync(const string& url, const vector< pair< string, string > >& formParams, HttpResponseCallBack onResponse)
         {
             string host;
             string path;
@@ -274,28 +366,28 @@ namespace base
             }
             path.append(content);
 
-            ResolveHostname(host);
-            auto it = dns_cache_.find(host);
-            if (it != dns_cache_.end()) {
-                DnsRecord& dns = it->second;
-                string ip = dns.getIP();
+            cout << "req:" << host << ":" << port << path << endl;
+            auto callback = [this, host, path, port, onResponse](const DnsRecord& result) {
+                string ip = result.getIP();
                 if (ip.empty()) {
-                    if (evt_handler) {
-                        evt_handler->OnHttpResponse(HttpStatusCode::No_Content, "dns resolve fail");
+                    if (onResponse)
+                    {
+                        onResponse(HttpStatusCode::No_Content, "dns resolve fail");
                     }
                 }
-                else {
-                    cout << "req:" << host << ":" << port << path << endl;
-                    HttpConnection* conn = new HttpConnection(evt_handler);
+                else
+                {
+                    HttpConnection* conn = new HttpConnection(onResponse, m_impl);
                     conn->WriteRequestHead(HttpMethod::GET, host, path);
                     conn->Connect(ip.c_str(), port);
-                    //conn->AutoRelease();
                 }
-            }
+            };
+            ResolveHostname(host, callback);
+
             return Error::OK;
         }
 
-        HttpClient::Error HttpClient::PostFormAsync(const string& url, const vector< pair< string, string > >& formParams, HttpClientEventHandler* evtHandler)
+        HttpClient::Error HttpClient::PostFormAsync(const string& url, const vector< pair< string, string > >& formParams, HttpResponseCallBack onResponse)
         {
             string host;
             string path;
@@ -316,29 +408,27 @@ namespace base
                 }
             }
 
-            ResolveHostname(host);
-            auto it = dns_cache_.find(host);
-            if (it != dns_cache_.end()) {
-                DnsRecord& dns = it->second;
-                string ip = dns.getIP();
+            auto callback = [this, host, path, port, content, onResponse](const DnsRecord& result) {
+                string ip = result.getIP();
                 if (ip.empty()) {
-                    if (evtHandler) {
-                        evtHandler->OnHttpResponse(HttpStatusCode::No_Content, "dns resolve fail");
+                    if (onResponse)
+                    {
+                        onResponse(HttpStatusCode::No_Content, "dns resolve fail");
                     }
                 }
-                else {
-                    cout << "req:" << host << ":" << port << path << endl;
-                    HttpConnection* conn = new HttpConnection(evtHandler);
+                else
+                {
+                    HttpConnection* conn = new HttpConnection(onResponse, m_impl);
                     conn->WriteRequestHead(HttpMethod::POST, host, path);
                     conn->WriteRequestBodyWithForm(content);
                     conn->Connect(ip.c_str(), port);
-                    //conn->AutoRelease();
                 }
-            }
+            };
+            ResolveHostname(host, callback);
             return Error::OK;
         }
 
-        HttpClient::Error HttpClient::PostJsonAsync(const string& url, const string& json, HttpClientEventHandler* evtHandler)
+        HttpClient::Error HttpClient::PostJsonAsync(const string& url, const string& json, HttpResponseCallBack onResponse)
         {
             string host;
             string path;
@@ -348,26 +438,27 @@ namespace base
                 return error;
             }
 
-            ResolveHostname(host);
-            auto it = dns_cache_.find(host);
-            if (it != dns_cache_.end()) {
-                DnsRecord& dns = it->second;
-                string ip = dns.getIP();
+            auto callback = [this, host, path, port, json, onResponse](const DnsRecord& result) {
+                string ip = result.getIP();
                 if (ip.empty()) {
-                    if (evtHandler) {
-                        evtHandler->OnHttpResponse(HttpStatusCode::No_Content, "dns resolve fail");
+                    if (onResponse)
+                    {
+                        onResponse(HttpStatusCode::No_Content, "dns resolve fail");
                     }
                 }
-                else {
-                    cout << "req:" << host << ":" << port << path << endl;
-                    HttpConnection* conn = new HttpConnection(evtHandler);
+                else
+                {
+                    HttpConnection* conn = new HttpConnection(onResponse, m_impl);
                     conn->WriteRequestHead(HttpMethod::POST, host, path);
                     conn->WriteRequestBodyWithJson(json);
                     conn->Connect(ip.c_str(), port);
-                    //conn->AutoRelease();
                 }
-            }
+            };
+            ResolveHostname(host, callback);
             return Error::OK;
         }
+
+
+
     }
 }

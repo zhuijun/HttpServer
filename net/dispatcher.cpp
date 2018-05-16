@@ -82,9 +82,8 @@ namespace base
         }
 
 
-        bool Dispatcher::AddFD(EventIO* fd)
+        void Dispatcher::AddFD(EventIO* fd)
         {
-            bool isAdd = false;
             fd->Retain();
             fd->SetKey(++socket_key_);
             all_sockets_.emplace(fd->Key(), fd);
@@ -94,7 +93,6 @@ namespace base
             {
                 cur_select_ = fd;
             }
-            return isAdd;
         }
 
         void Dispatcher::SetIOEvent(EventIO* fd, int evt)

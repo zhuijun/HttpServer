@@ -75,6 +75,8 @@ namespace base
 
             void SendResponse(int session, const Response& response);
 
+            void Close(int session);
+
         private:
             HttpServer();
             virtual ~HttpServer();

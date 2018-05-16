@@ -155,7 +155,7 @@ namespace base
                 Connection* conn = static_cast<Connection*>(parser->data);
                 conn->ParserUrl();
                 conn->OnHttpRequestComplete();
-                conn->Close();
+                //conn->Close();
                 return 0;
             }
 
@@ -185,6 +185,10 @@ namespace base
                     recvBuffer.Removed(r);
                     recvBuffer.MoveData();
                 }
+            }
+
+            virtual void OnSendCompleted() override {
+                Close();
             }
 
             void OnHttpRequestComplete() {
@@ -298,6 +302,14 @@ namespace base
                 }
             }
 
+            void Close(int session) {
+                auto it = m_connections.find(session);
+                if (it != m_connections.end()) {
+                    Connection* conn = it->second;
+                    conn->Close();
+                }
+            }
+
             class Listener;
             virtual void OnListenerAccept(net::Listener* sender, SOCKET clientfd) override {
                 Connection* conn = new Connection(++m_sessionNo);
@@ -373,9 +385,9 @@ namespace base
             int m_sessionNo = 0;
 
             HttpServer& m_server;
-            net::Listener* m_listener;
-            std::unordered_map<int, Connection*> m_connections;
-            std::unordered_map<string, Handler*> m_handlers;
+            net::Listener* m_listener = nullptr;
+            std::map<int, Connection*> m_connections;
+            std::map<string, Handler*> m_handlers;
             Handler* m_defaultHandler = nullptr;
             uint32_t m_aliveTimer = 0;
             uint32_t m_cleanupTimer = 0;
@@ -448,5 +460,11 @@ namespace base
         {
             m_impl->SendResponse(session, response);
         }
+
+        void HttpServer::Close(int session)
+        {
+            m_impl->Close(session);
+        }
+
     }
 }

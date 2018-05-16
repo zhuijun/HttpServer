@@ -31,10 +31,13 @@ namespace base
 
         void EventIO::Close()
         {
-            ioevt_ = 0;
-            closed_ = true;
-            Dispatcher::instance().DelFD(this);
-            CloseFD();
+            if (!closed_ && list_linked())
+            {
+                ioevt_ = 0;
+                closed_ = true;
+                Dispatcher::instance().DelFD(this);
+                CloseFD();
+            }
         }
 
         void EventIO::SetIOEvent()

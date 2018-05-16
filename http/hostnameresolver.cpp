@@ -11,8 +11,8 @@ namespace base
     {
         using namespace std;
 
-        HostnameResolver::HostnameResolver(const std::string& host)
-            : host_(host)
+        HostnameResolver::HostnameResolver(const std::string& host, std::function<void(DnsRecord& result)> callback)
+            : host_(host), callback_(callback)
         {
             result_.hostname = host_;
         }
@@ -34,6 +34,16 @@ namespace base
                     result_.createTs =Dispatcher::instance().GetTimestampCache();
                 }
             }
+        }
+
+        void HostnameResolver::doInWorkThread()
+        {
+            DoResolver();
+        }
+
+        void HostnameResolver::onPostExecute()
+        {
+            callback_(result_);
         }
     }
 }

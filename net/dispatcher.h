@@ -55,7 +55,7 @@ namespace base
 
             void DebugDump();
 
-            bool AddFD(EventIO* fd);
+            void AddFD(EventIO* fd);
 
             void SetIOEvent(EventIO* fd, int evt);
 

@@ -3,6 +3,7 @@
 #include "http/httpserver.h"
 #include "http/response.h"
 #include "base/TimerMgr.h"
+#include "thread/threadpool.h"
 
 class TestHttpEventHandler : public base::http::HttpClientEventHandler
 {

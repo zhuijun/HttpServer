@@ -19,6 +19,7 @@ TestHttpEventHandler g_TestHttpEventHandler;
 
 int main(int argc, char* argv[])
 {
+    base::thread::ThreadPool::getInstance()->start(2);
     base::http::HttpClient::Create();
     base::http::HttpServer::Create();
 
@@ -48,6 +49,7 @@ int main(int argc, char* argv[])
 
     base::Dispatcher::instance().Dispatch();
 
+    base::thread::ThreadPool::getInstance()->stop();
     base::http::HttpClient::Destroy();
     base::http::HttpServer::Destroy();
 

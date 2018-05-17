@@ -67,7 +67,6 @@ namespace base
             : thread_min_(0)
         {
             impl_ = new ThreadPoolImpl(*this);
-            s_instance_ = this;
         }
 
         ThreadPool::~ThreadPool()

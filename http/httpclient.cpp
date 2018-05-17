@@ -149,8 +149,16 @@ namespace base
                 InvokeSend();
             }
 
-            int64_t lastActiveTs() const {
+            int64_t LastActiveTs() const {
                 return m_lastActiveTs;
+            }
+
+            int TimeoutSeconds() const{
+                return m_timeoutSeconds;
+            }
+
+            void SetTimeoutSeconds(int timeoutSeconds) {
+                m_timeoutSeconds = timeoutSeconds;
             }
 
         private:
@@ -163,6 +171,7 @@ namespace base
             HttpResponseCallBack onResponse_;
             EventHandler* m_eventHandler = nullptr;
             int64_t m_lastActiveTs = 0;
+            int m_timeoutSeconds = 30; //³¬Ê±ÃëÊý
 
         public:
             static int on_message_begin_cb(http_parser* parser) {
@@ -251,7 +260,7 @@ namespace base
                 int64_t now = g_dispatcher->GetTimestampCache();
                 for (HttpConnection* conn : m_connections)
                 {
-                    if (now - conn->lastActiveTs() > 30) {
+                    if (now - conn->LastActiveTs() > conn->TimeoutSeconds()) {
                         conn->OnTimeOut();
                         conn->Close();
                     }
@@ -344,7 +353,7 @@ namespace base
             return HttpClient::Error::OK;
         }
 
-        HttpClient::Error HttpClient::GetAsync(const string& url, const vector< pair< string, string > >& formParams, HttpResponseCallBack onResponse)
+        HttpClient::Error HttpClient::GetAsync(const string& url, const vector< pair< string, string > >& formParams, HttpResponseCallBack onResponse, int timeoutSecond)
         {
             string host;
             string path;
@@ -367,7 +376,7 @@ namespace base
             path.append(content);
 
             cout << "req:" << host << ":" << port << path << endl;
-            auto callback = [this, host, path, port, onResponse](const DnsRecord& result) {
+            auto callback = [this, host, path, port, onResponse, timeoutSecond](const DnsRecord& result) {
                 string ip = result.getIP();
                 if (ip.empty()) {
                     if (onResponse)
@@ -380,6 +389,7 @@ namespace base
                     HttpConnection* conn = new HttpConnection(onResponse, m_impl);
                     conn->WriteRequestHead(HttpMethod::GET, host, path);
                     conn->Connect(ip.c_str(), port);
+                    conn->SetTimeoutSeconds(timeoutSecond);
                 }
             };
             ResolveHostname(host, callback);
@@ -387,7 +397,7 @@ namespace base
             return Error::OK;
         }
 
-        HttpClient::Error HttpClient::PostFormAsync(const string& url, const vector< pair< string, string > >& formParams, HttpResponseCallBack onResponse)
+        HttpClient::Error HttpClient::PostFormAsync(const string& url, const vector< pair< string, string > >& formParams, HttpResponseCallBack onResponse, int timeoutSecond)
         {
             string host;
             string path;
@@ -408,7 +418,7 @@ namespace base
                 }
             }
 
-            auto callback = [this, host, path, port, content, onResponse](const DnsRecord& result) {
+            auto callback = [this, host, path, port, content, onResponse, timeoutSecond](const DnsRecord& result) {
                 string ip = result.getIP();
                 if (ip.empty()) {
                     if (onResponse)
@@ -422,13 +432,14 @@ namespace base
                     conn->WriteRequestHead(HttpMethod::POST, host, path);
                     conn->WriteRequestBodyWithForm(content);
                     conn->Connect(ip.c_str(), port);
+                    conn->SetTimeoutSeconds(timeoutSecond);
                 }
             };
             ResolveHostname(host, callback);
             return Error::OK;
         }
 
-        HttpClient::Error HttpClient::PostJsonAsync(const string& url, const string& json, HttpResponseCallBack onResponse)
+        HttpClient::Error HttpClient::PostJsonAsync(const string& url, const string& json, HttpResponseCallBack onResponse, int timeoutSecond)
         {
             string host;
             string path;
@@ -438,7 +449,7 @@ namespace base
                 return error;
             }
 
-            auto callback = [this, host, path, port, json, onResponse](const DnsRecord& result) {
+            auto callback = [this, host, path, port, json, onResponse, timeoutSecond](const DnsRecord& result) {
                 string ip = result.getIP();
                 if (ip.empty()) {
                     if (onResponse)
@@ -452,6 +463,7 @@ namespace base
                     conn->WriteRequestHead(HttpMethod::POST, host, path);
                     conn->WriteRequestBodyWithJson(json);
                     conn->Connect(ip.c_str(), port);
+                    conn->SetTimeoutSeconds(timeoutSecond);
                 }
             };
             ResolveHostname(host, callback);

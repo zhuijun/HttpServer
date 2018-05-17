@@ -56,9 +56,9 @@ namespace base
                 BAD_URL,
             };
 
-            Error GetAsync(const std::string& url, const std::vector<std::pair<std::string, std::string>>& formParams, HttpResponseCallBack onResponse);
-            Error PostFormAsync(const std::string& url, const std::vector<std::pair<std::string, std::string>>& formParams, HttpResponseCallBack onResponse);
-            Error PostJsonAsync(const std::string& url, const std::string& json, HttpResponseCallBack onResponse);
+            Error GetAsync(const std::string& url, const std::vector<std::pair<std::string, std::string>>& formParams, HttpResponseCallBack onResponse, int timeoutSecond = 30);
+            Error PostFormAsync(const std::string& url, const std::vector<std::pair<std::string, std::string>>& formParams, HttpResponseCallBack onResponse, int timeoutSecond = 30);
+            Error PostJsonAsync(const std::string& url, const std::string& json, HttpResponseCallBack onResponse, int timeoutSecond = 30);
 
         private:
             HttpClient();

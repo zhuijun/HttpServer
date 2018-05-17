@@ -193,15 +193,7 @@ namespace base
                     }
                 }
 
-                n = 0;
-                if (fds_read.fd_count > 0 || fds_write.fd_count > 0)
-                {
-                    n = select(maxfd, &fds_read, &fds_write, &fds_err, &timeout);
-                }
-                else
-                {
-                    Sleep(wait_);
-                }
+                n = select(maxfd, &fds_read, &fds_write, &fds_err, &timeout);
 
                 if (n <= -1) {
                     int err = WSAGetLastError();

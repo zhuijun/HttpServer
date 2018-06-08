@@ -124,7 +124,7 @@ namespace base
 
             struct timeval timeout;
             timeout.tv_sec = 0;
-            timeout.tv_usec = wait_;
+            timeout.tv_usec = wait_ * 1000;
 
             UpdateTickCache();
             tick_last_ = tick_;
@@ -169,79 +169,90 @@ namespace base
 
                 UnsafeTimerInst.UpdateTimer();
 
-                FD_ZERO(&fds_read);
-                FD_ZERO(&fds_write);
-                FD_ZERO(&fds_err);
+				int select_cnt = io_list_.size() / FD_SETSIZE;
+				if (select_cnt == 0)
+				{
+					select_cnt = 1;
+				}
+				timeout.tv_usec = wait_ * 1000 / select_cnt;
 
-                if (!io_list_.empty())
-                {
-                    for (int i = 0; i < FD_SETSIZE; ++i)
-                    {
-                        if (cur_select_ == nullptr)
-                        {
-                            cur_select_ = io_list_.front();
-                        }
-                        if (cur_select_)
-                        {
-                            cur_select_->SetIOEvent();
-                            cur_select_ = io_list_.next(cur_select_);
-                        }
-                        if (cur_select_ == nullptr)
-                        {
-                            break;
-                        }
-                    }
-                }
+				while (select_cnt > 0)
+				{
+					--select_cnt;
+					FD_ZERO(&fds_read);
+					FD_ZERO(&fds_write);
+					FD_ZERO(&fds_err);
 
-                n = select(maxfd, &fds_read, &fds_write, &fds_err, &timeout);
+					if (!io_list_.empty())
+					{
+						for (int i = 0; i < FD_SETSIZE; ++i)
+						{
+							if (cur_select_ == nullptr)
+							{
+								cur_select_ = io_list_.front();
+							}
+							if (cur_select_)
+							{
+								cur_select_->SetIOEvent();
+								cur_select_ = io_list_.next(cur_select_);
+							}
+							if (cur_select_ == nullptr)
+							{
+								break;
+							}
+						}
+					}
 
-                if (n <= -1) {
-                    int err = WSAGetLastError();
-                    // error
-                    // TODO error handle
-                }
-                else if (n == 0) {
-                    // timeout
-                }
-                else {
-                    // handle io event
-                    EventIO* pre_evt_io = nullptr;
-                    if (cur_select_ == nullptr)
-                    {
-                        pre_evt_io = io_list_.back();
-                    }
-                    else
-                    {
-                        pre_evt_io = io_list_.pre(cur_select_);
-                    }
-                    int tmp = 0;
-                    for (int x = 0; x < FD_SETSIZE; ++x)
-                    {
-                        EventIO* evt_io = pre_evt_io;
-                        if (evt_io == nullptr)
-                        {
-                            break;
-                        }
-                        pre_evt_io = io_list_.pre(evt_io);
+					n = select(maxfd, &fds_read, &fds_write, &fds_err, &timeout);
 
-                        SOCKET fd = evt_io->fd();
-                        if (FD_ISSET(fd, &fds_read))
-                        {
-                            ++tmp;
-                            evt_io->OnEventIOReadable();
-                        }
-                        if (FD_ISSET(fd, &fds_write))
-                        {
-                            ++tmp;
-                            evt_io->OnEventIOWriteable();
-                        }
+					if (n <= -1) {
+						int err = WSAGetLastError();
+						// error
+						// TODO error handle
+					}
+					else if (n == 0) {
+						// timeout
+					}
+					else {
+						// handle io event
+						EventIO* pre_evt_io = nullptr;
+						if (cur_select_ == nullptr)
+						{
+							pre_evt_io = io_list_.back();
+						}
+						else
+						{
+							pre_evt_io = io_list_.pre(cur_select_);
+						}
+						int tmp = 0;
+						for (int x = 0; x < FD_SETSIZE; ++x)
+						{
+							EventIO* evt_io = pre_evt_io;
+							if (evt_io == nullptr)
+							{
+								break;
+							}
+							pre_evt_io = io_list_.pre(evt_io);
 
-                        if (tmp >= n)
-                        {
-                            break;
-                        }
-                    }
-                }
+							SOCKET fd = evt_io->fd();
+							if (FD_ISSET(fd, &fds_read))
+							{
+								++tmp;
+								evt_io->OnEventIOReadable();
+							}
+							if (FD_ISSET(fd, &fds_write))
+							{
+								++tmp;
+								evt_io->OnEventIOWriteable();
+							}
+
+							if (tmp >= n)
+							{
+								break;
+							}
+						}
+					}
+				}
 
                 while (!closed_io_list_.empty()) {
                     EventIO* cur = closed_io_list_.front();

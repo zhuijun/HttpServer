@@ -360,6 +360,7 @@ namespace base
             int port;
             Error error = parseUrl(url, host, path, &port);
             if (error != Error::OK) {
+                onResponse(HttpStatusCode::Bad_Request, "parseUrl fail");
                 return error;
             }
 
@@ -392,8 +393,10 @@ namespace base
                     conn->SetTimeoutSeconds(timeoutSecond);
                 }
             };
-            ResolveHostname(host, callback);
 
+            base::Dispatcher::instance().ExecuteAtNextLoop([this, host, callback]() {
+                ResolveHostname(host, callback);
+            } );
             return Error::OK;
         }
 
@@ -404,6 +407,7 @@ namespace base
             int port;
             Error error = parseUrl(url, host, path, &port);
             if (error != Error::OK) {
+                onResponse(HttpStatusCode::Bad_Request, "parseUrl fail");
                 return error;
             }
 
@@ -435,7 +439,10 @@ namespace base
                     conn->SetTimeoutSeconds(timeoutSecond);
                 }
             };
-            ResolveHostname(host, callback);
+
+            base::Dispatcher::instance().ExecuteAtNextLoop([this, host, callback]() {
+                ResolveHostname(host, callback);
+            });
             return Error::OK;
         }
 
@@ -446,6 +453,7 @@ namespace base
             int port;
             Error error = parseUrl(url, host, path, &port);
             if (error != Error::OK) {
+                onResponse(HttpStatusCode::Bad_Request, "parseUrl fail");
                 return error;
             }
 
@@ -466,7 +474,10 @@ namespace base
                     conn->SetTimeoutSeconds(timeoutSecond);
                 }
             };
-            ResolveHostname(host, callback);
+
+            base::Dispatcher::instance().ExecuteAtNextLoop([this, host, callback]() {
+                ResolveHostname(host, callback);
+            });
             return Error::OK;
         }
 

@@ -169,11 +169,7 @@ namespace base
 
                 UnsafeTimerInst.UpdateTimer();
 
-				int select_cnt = io_list_.size() / FD_SETSIZE;
-				if (select_cnt == 0)
-				{
-					select_cnt = 1;
-				}
+				int select_cnt = io_list_.size() / FD_SETSIZE  + 1;
 				timeout.tv_usec = wait_ * 1000 / select_cnt;
 
 				while (select_cnt > 0)

@@ -1,5 +1,4 @@
 #include "listener.h"
-
 #include "utils.h"
 #include "client.h"
 
@@ -57,14 +56,23 @@ namespace base
             {
                 sockaddr_in clientaddr;
                 int clientaddrlen = sizeof(struct sockaddr_in);
-                SOCKET clientfd = accept(fd(), (sockaddr*)&clientaddr, &clientaddrlen);
+                SOCKET clientfd = accept(fd(), (sockaddr*)&clientaddr, (socklen_t*)&clientaddrlen);
                 if (clientfd == INVALID_SOCKET)
                 {
+#ifdef _WIN32
                     int err = WSAGetLastError();
                     if (err == WSAEWOULDBLOCK)
                     {
                         break;
                     }
+#else
+                    if (errno == EWOULDBLOCK) 
+                    {
+                        break;
+                    }
+#endif // _WIN32
+
+
                     //LOG_ERROR("accept fail, errno:%d\n", errno);
                     break;
                 }

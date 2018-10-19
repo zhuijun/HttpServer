@@ -1,7 +1,7 @@
 #ifndef BASE_NET_LISTENER_H
 #define BASE_NET_LISTENER_H
 
-#include "global.h"
+#include "Global.h"
 #include "eventio.h"
 
 namespace base

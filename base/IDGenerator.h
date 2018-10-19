@@ -1,21 +1,24 @@
 #pragma once
 
 #include <queue>
-#include <windows.h>
+//#include <windows.h>
+
+#include <atomic>
 
 class IDGenerator
 {
 public:
-	DWORD m_dwLastID;
+    std::atomic_ulong m_dwLastID;
 
 public:
-	IDGenerator() : m_dwLastID(0)
+	IDGenerator()
 	{
 	}
 
-	inline DWORD GetUniqueID()
+	inline unsigned long GetUniqueID()
 	{
-		return ::InterlockedIncrement( (LONG volatile *) &m_dwLastID );
+        return ++m_dwLastID;
+		//return ::InterlockedIncrement( (LONG volatile *) &m_dwLastID );
 	}
 };
 

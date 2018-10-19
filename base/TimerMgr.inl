@@ -2,7 +2,7 @@ template
 <
 	class T
 >
-DWORD UnsafeTimerMgr::AddFunction( int iDelayFromNow, T* pThis, void (T::*cbFunc)( void* cbData ), void* pData, int iRepeatCycle,  int iRepeatCnt  )
+unsigned long UnsafeTimerMgr::AddFunction( int iDelayFromNow, T* pThis, void (T::*cbFunc)( void* cbData ), void* pData, int iRepeatCycle,  int iRepeatCnt  )
 {
 	MemberTimerJob<T> * pJob = new MemberTimerJob<T>( (T*)pThis, pData, cbFunc);
 	if ( NULL == pJob )
@@ -17,9 +17,9 @@ DWORD UnsafeTimerMgr::AddFunction( int iDelayFromNow, T* pThis, void (T::*cbFunc
 		return 0;
 	}
 
-    pObj->m_ulEventTick = ((ULONG)iDelayFromNow * 1000) + m_tickprovider();
+    pObj->m_ulEventTick = ((unsigned long)iDelayFromNow * 1000) + m_tickprovider();
 	pObj->m_pJob = pJob;
-	pObj->m_ulEventGap = ((ULONG)iRepeatCycle*1000);
+        pObj->m_ulEventGap = ((unsigned long)iRepeatCycle*1000);
 	pObj->m_iRepeatCnt = iRepeatCnt;
 	pObj->m_dwJobHandle = m_idGenerator.GetUniqueID();
 	pObj->m_pMemoryHandle = (MemoryHandle*)pThis;
@@ -27,8 +27,10 @@ DWORD UnsafeTimerMgr::AddFunction( int iDelayFromNow, T* pThis, void (T::*cbFunc
 
 	if ( !m_mapTimerRepeated.insert(MapTimerRepeated::value_type(pObj->m_dwJobHandle, pObj)).second)
 	{
-		SAFE_DELETE(pObj);
-		SAFE_DELETE(pJob);
+                //SAFE_DELETE(pObj);
+                if (pObj) delete pObj;
+                //SAFE_DELETE(pJob);
+                if (pJob) delete pJob;
 		return 0;
 	}
 
@@ -41,7 +43,7 @@ template
 <
 	class T
 >
-DWORD UnsafeTimerMgr::AddMemberFunctionTimeRepeat(int iDelayFromNow, T* pT, void (T::*cbFunc)( void* cbData ), void* pData, int iRepeatCycle,  int iRepeatCnt )
+unsigned long UnsafeTimerMgr::AddMemberFunctionTimeRepeat(int iDelayFromNow, T* pT, void (T::*cbFunc)( void* cbData ), void* pData, int iRepeatCycle,  int iRepeatCnt )
 {
 	if ( iRepeatCycle < 1 )
 	{

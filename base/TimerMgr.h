@@ -7,15 +7,23 @@
 #include <map>
 #include <functional>
 
+#ifdef _WIN32
+#include <Windows.h>
+#elif __APPLE__
+#include <sys/time.h>
+#else
+#include <time.h>
+#endif // _WIN32
+
 class MemoryHandle
 {
 private:
-	DWORD m_handle;
+	unsigned long m_handle;
 
 public:
 	enum { INVALID_MEMORY_HANDLE };
 
-	MemoryHandle(DWORD handle) : m_handle(handle)
+	MemoryHandle(unsigned long handle) : m_handle(handle)
 	{
 
 	}
@@ -25,17 +33,17 @@ public:
 		m_handle = INVALID_MEMORY_HANDLE;
 	}
 
-	DWORD GetHandle() const
+	unsigned long GetHandle() const
 	{
 		return m_handle;
 	}
 
-	BOOL IsValid() const
+	bool IsValid() const
 	{
 		return !(INVALID_MEMORY_HANDLE == m_handle);
 	}
 
-	BOOL IsValidWith(DWORD handle) const
+    bool IsValidWith(unsigned long handle) const
 	{
 		return (handle == m_handle);
 	}
@@ -46,15 +54,27 @@ class NowTickProvider
 public:
     NowTickProvider()
     {
+#ifdef _WIN32
         m_init = ::GetTickCount64();
+#endif // _WIN32
     }
 
-    ULONGLONG operator()() {
+    unsigned long long operator()() {
+#ifdef _WIN32
         return ::GetTickCount64() - m_init;
+#elif defined __APPLE__
+        timeval now;
+        gettimeofday(&now, NULL);
+        return now.tv_sec * 1000 + now.tv_usec / 1000;
+#else
+        struct timespec now;
+        clock_gettime(CLOCK_REALTIME, &now);
+        return now.tv_sec * 1000 + now.tv_nsec / 1000000;
+#endif // _WIN32
     }
 
 private:
-    ULONGLONG m_init = 0;
+    unsigned long long m_init = 0;
 };
 
 class TimerJob
@@ -120,11 +140,11 @@ class TimeEventObject
 
 private:
 
-	DWORD m_dwJobHandle;
-	ULONG m_ulEventTick;
-	ULONG m_ulEventGap;
+	unsigned long m_dwJobHandle;
+    unsigned long m_ulEventTick;
+    unsigned long m_ulEventGap;
 	TimerJob* m_pJob;
-	DWORD m_hMemory;
+	unsigned long m_hMemory;
 	int m_iRepeatCnt;
 	MemoryHandle* m_pMemoryHandle;
 
@@ -146,7 +166,7 @@ public:
 class UnsafeTimerMgr : public Singleton<UnsafeTimerMgr>
 {
 private:
-	typedef std::map<DWORD, TimeEventObject*>		MapTimerRepeated;
+	typedef std::map<unsigned long, TimeEventObject*>		MapTimerRepeated;
 	typedef MapTimerRepeated::iterator							MapTimerRepeatedItr;
 	typedef MapTimerRepeated::const_iterator				MapTimerRepeatedCItr;
 	typedef std::vector<TimeEventObject*>					ArrayTimerExcute;
@@ -154,8 +174,8 @@ private:
 	typedef ArrayTimerExcute::const_iterator					ArrayTimerExcuteCItr;
 
 private:
-	DWORD						m_handleNum;
-	DWORD						m_dwTick;
+	unsigned long						m_handleNum;
+	unsigned long						m_dwTick;
 	IDGenerator				m_idGenerator;
 	MapTimerRepeated	m_mapTimerRepeated;
 	
@@ -164,16 +184,16 @@ private:
 private:
 
 	// member function call
-	template <class T> DWORD AddFunction( int, T*, void (T::*CBFunc)( void* CBData ), void*, int, int ); 
+	template <class T> unsigned long AddFunction( int, T*, void (T::*CBFunc)( void* CBData ), void*, int, int ); 
 
 	// static function call
-	DWORD AddFunctionStatic( int, void (*CBFunc)( void* CBData ),	void*, int, int  );	
+	unsigned long AddFunctionStatic( int, void (*CBFunc)( void* CBData ),	void*, int, int  );	
 
 public:
 
 	void UpdateTimer(); 
 
-	void RemoveFunction(DWORD);
+	void RemoveFunction(unsigned long);
 
 	size_t GetTimerCount() const { return m_mapTimerRepeated.size(); }
 
@@ -183,11 +203,11 @@ public:
     	iRepeatCnt : -1 时为不限次数 > 0为具体的次数，不能为 0，且不可小于 -1
     */
     //添加 成员函数
-	template <class T> DWORD AddMemberFunctionTimeRepeat(int iDelayFromNow, T* pT, void (T::*CBFunc)( void* CBData ), void* pData, int iRepeatCycle = 1,  int iRepeatCnt = -1 );
+	template <class T> unsigned long AddMemberFunctionTimeRepeat(int iDelayFromNow, T* pT, void (T::*CBFunc)( void* CBData ), void* pData, int iRepeatCycle = 1,  int iRepeatCnt = -1 );
     //添加 静态函数
-	DWORD AddStaticFunctionXTimeRepeat(int iDelayFromNow,  void (*CBFunc)( void* CBData ), void* pData, int iRepeatCycle = 1,  int iRepeatCnt = -1 );
+	unsigned long AddStaticFunctionXTimeRepeat(int iDelayFromNow,  void (*CBFunc)( void* CBData ), void* pData, int iRepeatCycle = 1,  int iRepeatCnt = -1 );
     //添加 std::function
-    DWORD AddStdFunctionTimeRepeat(int iDelayFromNow, const std::function<void()>& fun, int iRepeatCycle = 1, int iRepeatCnt = -1);
+    unsigned long AddStdFunctionTimeRepeat(int iDelayFromNow, const std::function<void()>& fun, int iRepeatCycle = 1, int iRepeatCnt = -1);
 
 	UnsafeTimerMgr();
 

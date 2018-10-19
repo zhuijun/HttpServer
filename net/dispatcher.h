@@ -7,8 +7,10 @@
 #include <queue>
 #include <functional>
 #include <time.h>
-#include <WinSock2.h>
-#include "TimerMgr.h"
+
+#include "../Header.h"
+
+//#include "TimerMgr.h"
 #include "intrusive_list.h"
 
 namespace base
@@ -35,7 +37,7 @@ namespace base
                 return frame_no_;
             }
             
-            void Dispatcher::ExecuteAtNextLoop(const std::function<void()>& cb);
+            void ExecuteAtNextLoop(const std::function<void()>& cb);
 
             void Dispatch();
 
@@ -76,8 +78,8 @@ namespace base
             bool exit_;
             int64_t tick_last_;
             int64_t tick_;
-            int64_t ts_begin_ = 0;
-            int64_t tick_begin_ = 0;
+            //int64_t ts_begin_ = 0;
+            //int64_t tick_begin_ = 0;
             int wait_;
             uint64_t frame_no_;
             std::vector<std::function<void()>> execute_at_next_loop_;

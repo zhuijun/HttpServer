@@ -1,9 +1,10 @@
 #ifndef BASE_NET_UTILS_H
 #define BASE_NET_UTILS_H
 
-#include <WinSock2.h>
 #include <stdint.h>
 #include <string>
+
+#include "../Header.h"
 
 namespace base
 {

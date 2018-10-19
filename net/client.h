@@ -1,8 +1,8 @@
-﻿#ifndef BASE_NET_CLIENT_H
+#ifndef BASE_NET_CLIENT_H
 #define BASE_NET_CLIENT_H
 
 #include "eventio.h"
-#include "observer.h"
+#include "Observer.h"
 #include <string>
 #include <deque>
 #include <vector>

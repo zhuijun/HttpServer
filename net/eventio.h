@@ -1,9 +1,11 @@
 #ifndef BASE_EVENT_EVENTIO_H
 #define BASE_EVENT_EVENTIO_H
-#include <WinSock2.h>
+
 #include <cstddef>
-#include "object.h"
+
+#include "Object.h"
 #include "intrusive_list.h"
+#include "../Header.h"
 
 
 namespace base

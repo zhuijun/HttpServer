@@ -2,8 +2,9 @@
 
 #include <stdlib.h>
 #include <time.h>
-#include <WinSock2.h>
 #include "../net/dispatcher.h"
+
+#include "../Header.h"
 
 namespace base
 {

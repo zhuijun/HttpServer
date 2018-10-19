@@ -1,8 +1,9 @@
-﻿#include "client.h"
+#include "client.h"
 #include "utils.h"
 #include "utils_string.h"
 #include <cerrno>
 #include <stdint.h>
+#include <string.h>
 
 namespace base
 {
@@ -52,9 +53,15 @@ namespace base
             AddToDispatcher(clientfd, IO_WRITEABLE);
             int rc = ::connect(clientfd, (sockaddr*)&addr, sizeof(struct sockaddr_in));
             if (rc == SOCKET_ERROR) {
+
+#ifdef _WIN32
                 int err = WSAGetLastError();
                 if (err != WSAEWOULDBLOCK) {
-                    OnConnectFail(err, strerror(errno));
+#else
+                int err = errno;
+                if (err != EINPROGRESS) {
+#endif // _WIN32
+                    OnConnectFail(err, strerror(err));
                     Close();
                 } else {
                     connect_pending_ = true;
@@ -85,11 +92,19 @@ namespace base
                 }
                 else
                 {
+#ifdef _WIN32
                     int err = WSAGetLastError();
                     if (err != WSAEWOULDBLOCK)
                     {
                         Close();
                     }
+#else
+                    if (errno != EAGAIN || errno != EWOULDBLOCK) 
+                    {
+                        Close();
+                    }
+#endif // _WIN32
+
                     break;
                 }
             }
@@ -117,9 +132,16 @@ namespace base
         void Client::CheckIfConnectCompleted()
         {
             connect_pending_ = false;
+
+#ifdef _WIN32
             int err = 0;
             int errlen = sizeof(int);
             if (getsockopt(fd(), SOL_SOCKET, SO_ERROR, (char *)&err, &errlen) == -1) {
+#else
+            int err = 0;
+            socklen_t errlen = sizeof(int);
+            if (getsockopt(fd(), SOL_SOCKET, SO_ERROR, (void *)&err, (socklen_t *)&errlen) == -1) {
+#endif // _WIN32
                 OnConnectFail(err, strerror(err));
                 Close();
             } else {
@@ -149,10 +171,18 @@ namespace base
             }
             else
             {
+#ifdef _WIN32
                 int err = WSAGetLastError();
-                if (err != WSAEWOULDBLOCK) {
+                if (err != WSAEWOULDBLOCK)
+                {
                     Close();
                 }
+#else
+                if (errno != EAGAIN || errno != EWOULDBLOCK)
+                {
+                    Close();
+                }
+#endif // _WIN32
                 else
                 {
                     ModifyIOEvent(ioevt_ | IO_WRITEABLE);

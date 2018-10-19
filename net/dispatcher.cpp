@@ -1,7 +1,8 @@
 #include "dispatcher.h"
 #include "eventio.h"
-#include <concrt.h>
+#include <mutex>
 #include <math.h>
+#include "TimerMgr.h"
 
 base::Dispatcher* g_dispatcher = nullptr;
 
@@ -31,7 +32,7 @@ namespace base
             
         protected:
 
-            Concurrency::critical_section m_cs;
+            std::mutex m_cs;
         };
 
         /// EventDispatcher
@@ -57,15 +58,16 @@ namespace base
 
         int64_t Dispatcher::UpdateTickCache()
         {
-            if (ts_begin_ == 0)
-            {
-                ts_begin_ = time(NULL);
-                tick_begin_ = GetTickCount64();
-            }
+            //if (ts_begin_ == 0)
+            //{
+            //    ts_begin_ = time(NULL);
+            //    tick_begin_ = GetTickCount64();
+            //}
 
-            int64_t cur_tick = GetTickCount64();
-            
-            tick_ = ts_begin_ * 1000 + (cur_tick - tick_begin_);
+            //int64_t cur_tick = GetTickCount64();
+            //tick_ = ts_begin_ * 1000 + (cur_tick - tick_begin_);
+            //return tick_;
+            tick_ = nowtick();
             return tick_;
         }
 
@@ -174,6 +176,7 @@ namespace base
 
 				while (select_cnt > 0)
 				{
+                    maxfd = -1;
 					--select_cnt;
 					FD_ZERO(&fds_read);
 					FD_ZERO(&fds_write);
@@ -189,6 +192,10 @@ namespace base
 							}
 							if (cur_select_)
 							{
+                                if (cur_select_->fd() > maxfd)
+                                {
+                                    maxfd = cur_select_->fd();
+                                }
 								cur_select_->SetIOEvent();
 								cur_select_ = io_list_.next(cur_select_);
 							}
@@ -199,11 +206,16 @@ namespace base
 						}
 					}
 
-					n = select(maxfd, &fds_read, &fds_write, &fds_err, &timeout);
+					n = select(maxfd + 1, &fds_read, &fds_write, &fds_err, &timeout);
 
 					if (n <= -1) {
-						int err = WSAGetLastError();
-						// error
+
+#ifdef _WIN32
+                        int err = WSAGetLastError();
+                        // error
+#else
+
+#endif // _WIN32
 						// TODO error handle
 					}
 					else if (n == 0) {

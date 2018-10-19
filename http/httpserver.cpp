@@ -9,6 +9,7 @@
 #include "Object.h"
 #include "Global.h"
 #include "TimerMgr.h"
+#include <string.h>
 
 namespace base
 {

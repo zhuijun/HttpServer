@@ -2,7 +2,6 @@
 #include <cstring>
 #include <cerrno>
 #include <fcntl.h>
-#include <Ws2tcpip.h>
 #include "utils_string.h"
 
 namespace base
@@ -25,10 +24,22 @@ namespace base
 
         void make_fd_nonblocking(int fd)
         {
+#ifdef _WIN32
             u_long iMode = 1;
             int iResult = ioctlsocket(fd, FIONBIO, &iMode);
             if (iResult != NO_ERROR)
                 printf("ioctlsocket failed with error: %ld\n", iResult);
+#else
+            int opts = fcntl(fd, F_GETFL);
+            //errno_assert(opts != -1);
+
+            opts = opts | O_NONBLOCK;
+            int rc = 0;
+            rc = fcntl(fd, F_SETFL, opts);
+            //errno_assert(rc != -1);
+
+#endif
+
         }
 
         void make_socket_nodelay(int sock)
@@ -43,7 +54,7 @@ namespace base
         {
             sockaddr_in addr;
             int len = sizeof(addr);
-            ::getpeername(fd, (sockaddr*)&addr, &len);
+            ::getpeername(fd, (sockaddr*)&addr, (socklen_t*)&len);
 
             *ip = inet_ntoa(addr.sin_addr);
             *port = addr.sin_port;

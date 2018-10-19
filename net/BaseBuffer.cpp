@@ -1,6 +1,6 @@
 
 #include "BaseBuffer.h"
-#include <windows.h>
+#include <string.h>
 
 BaseBuffer::BaseBuffer(char* pBuffer, unsigned int uiSize)
 	: m_pBuffer(pBuffer), m_uiBufferSize(uiSize), m_uiHead(0), m_uiTail(0)
@@ -57,7 +57,7 @@ bool BaseBuffer::Add(const char* pData, unsigned int uiSize)
 	{
 		return false;
 	}
-	CopyMemory( Tail(), pData, uiSize );
+	memcpy( Tail(), pData, uiSize );
 	Added( uiSize );
 	return true;
 }
@@ -73,21 +73,7 @@ void BaseBuffer::MoveData()
 		}
 		else
 		{
-			if ( FALSE != ::IsBadWritePtr(Buffer(), DataSize()) )
-			{ 
-				m_uiHead = 0;
-				m_uiTail = 0;
-				return;
-			}
-
-			if ( FALSE != ::IsBadReadPtr(Head(), DataSize()) )
-			{ 
-				m_uiHead = 0;
-				m_uiTail = 0;
-				return;
-			}
-
-			::MoveMemory(Buffer(), Head(), DataSize());
+            memmove(Buffer(), Head(), DataSize());
 			m_uiTail -= m_uiHead;
 			m_uiHead = 0;
 		}

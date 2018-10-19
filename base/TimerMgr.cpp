@@ -76,7 +76,7 @@ void UnsafeTimerMgr::UpdateTimer()
 	}
 }
 
-void UnsafeTimerMgr::RemoveFunction(DWORD dwJobHandle)
+void UnsafeTimerMgr::RemoveFunction(unsigned long dwJobHandle)
 {
 	if ( 0 == dwJobHandle )
 	{
@@ -97,7 +97,7 @@ void UnsafeTimerMgr::RemoveFunction(DWORD dwJobHandle)
 	}
 }
 
-DWORD UnsafeTimerMgr::AddFunctionStatic( int iDelayFromNow, void (*CBFunc)( void* CBData ), void* pData, int iRepeatCycle, int iRepeatCnt )
+unsigned long UnsafeTimerMgr::AddFunctionStatic( int iDelayFromNow, void (*CBFunc)( void* CBData ), void* pData, int iRepeatCycle, int iRepeatCnt )
 {
 	if ( 0 == iRepeatCycle && ( -1 == iRepeatCnt || 1 < iRepeatCnt  ))
 	{
@@ -109,9 +109,9 @@ DWORD UnsafeTimerMgr::AddFunctionStatic( int iDelayFromNow, void (*CBFunc)( void
 
 	if (pJob != NULL && pObj != NULL)
 	{
-        pObj->m_ulEventTick = ((ULONG)iDelayFromNow * 1000) + m_tickprovider();
+        pObj->m_ulEventTick = ((unsigned long)iDelayFromNow * 1000) + m_tickprovider();
 		pObj->m_pJob = pJob;
-		pObj->m_ulEventGap = ((ULONG)iRepeatCycle * 1000);
+        pObj->m_ulEventGap = ((unsigned long)iRepeatCycle * 1000);
 		pObj->m_iRepeatCnt = iRepeatCnt;
 		pObj->m_dwJobHandle = m_idGenerator.GetUniqueID();
 		pObj->m_pMemoryHandle = NULL;
@@ -129,7 +129,7 @@ DWORD UnsafeTimerMgr::AddFunctionStatic( int iDelayFromNow, void (*CBFunc)( void
 
 //	iRepeatCycle: 两次重复的间隔时间 > 0,  默认为 1秒
 //	iRepeatCnt : -1 时为不限次数 > 0为具体的次数，不能为 0，且不可小于 -1 
-DWORD UnsafeTimerMgr::AddStaticFunctionXTimeRepeat(int iDelayFromNow,  void (*CBFunc)( void* CBData ), void* pData, int iRepeatCycle,  int iRepeatCnt )
+unsigned long UnsafeTimerMgr::AddStaticFunctionXTimeRepeat(int iDelayFromNow,  void (*CBFunc)( void* CBData ), void* pData, int iRepeatCycle,  int iRepeatCnt )
 {
 	if ( iRepeatCycle < 1 )
 	{
@@ -144,7 +144,7 @@ DWORD UnsafeTimerMgr::AddStaticFunctionXTimeRepeat(int iDelayFromNow,  void (*CB
 	return AddFunctionStatic( iDelayFromNow, CBFunc, pData, iRepeatCycle, iRepeatCnt );
 }
 
-DWORD UnsafeTimerMgr::AddStdFunctionTimeRepeat(int iDelayFromNow, const std::function<void()>& fun, int iRepeatCycle /*= 1*/, int iRepeatCnt /*= -1*/)
+unsigned long UnsafeTimerMgr::AddStdFunctionTimeRepeat(int iDelayFromNow, const std::function<void()>& fun, int iRepeatCycle /*= 1*/, int iRepeatCnt /*= -1*/)
 {
     if (iRepeatCycle < 1)
     {
@@ -161,9 +161,9 @@ DWORD UnsafeTimerMgr::AddStdFunctionTimeRepeat(int iDelayFromNow, const std::fun
 
     if (pJob != NULL && pObj != NULL)
     {
-        pObj->m_ulEventTick = ((ULONG)iDelayFromNow * 1000) + m_tickprovider();
+        pObj->m_ulEventTick = ((unsigned long)iDelayFromNow * 1000) + m_tickprovider();
         pObj->m_pJob = pJob;
-        pObj->m_ulEventGap = ((ULONG)iRepeatCycle * 1000);
+        pObj->m_ulEventGap = ((unsigned long)iRepeatCycle * 1000);
         pObj->m_iRepeatCnt = iRepeatCnt;
         pObj->m_dwJobHandle = m_idGenerator.GetUniqueID();
         pObj->m_pMemoryHandle = NULL;

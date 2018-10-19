@@ -2,6 +2,8 @@
 
 #include <stdio.h>
 #include <iostream>
+#include <string.h>
+#include <list>
 
 #include "http_parser.h"
 #include "hostnameresolver.h"
@@ -11,6 +13,10 @@
 #include "../net/dispatcher.h"
 #include "../net/BaseBuffer.h"
 #include "../thread/threadpool.h"
+#include "TimerMgr.h"
+//#include "Log.h"
+
+#include "gzip/gzip.hpp"
 
 namespace base
 {
@@ -31,13 +37,11 @@ namespace base
 
             HttpConnection(const HttpResponseCallBack& onResponse, EventHandler* evtHandler)
                 : onResponse_(onResponse), m_eventHandler(evtHandler) {
-                //SAFE_RETAIN(handler_);
                 http_parser_init(&parser_, HTTP_RESPONSE);
                 parser_.data = this;
             }
 
             virtual ~HttpConnection() {
-                //SAFE_RELEASE(handler_);
             }
 
             void WriteRequestHead(HttpMethod method, const string& host, const string& path) {
@@ -53,6 +57,11 @@ namespace base
                     sendBuffer.Add(host.c_str(), host.length());
                     sendBuffer.Add("\r\n", 2);
                     sendBuffer.Add("Content-Length: 0\r\n", 19);
+                    sendBuffer.Add("Accept-Encoding: gzip\r\n", 23);
+                    std::string ua("User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:61.0) Gecko/20100101 Firefox/61.0\r\n");
+                    sendBuffer.Add(ua.c_str(), ua.length());
+                    std::string cc("Cache-Control: max-age=1\r\n");
+                    sendBuffer.Add(cc.c_str(), cc.length());
                     sendBuffer.Add("\r\n", 2);
                     m_hasBody = true;
                 } else {
@@ -94,9 +103,6 @@ namespace base
                 {
                     size_t r = http_parser_execute(&parser_, &settings, recvBuffer.Data(), recvBuffer.DataSize());
                     if (r != recvBuffer.DataSize()) {
-                        //if (handler_) {
-                        //    handler_->OnHttpResponse(HttpStatusCode::Not_Acceptable, HTTP_STATUS_STRING(HttpStatusCode::Not_Acceptable));
-                        //}
                         if (onResponse_)
                         {
                             onResponse_(HttpStatusCode::Not_Acceptable, HTTP_STATUS_STRING(HttpStatusCode::Not_Acceptable));
@@ -118,16 +124,19 @@ namespace base
             }
 
             void OnConnectFail(int eno, const char* reason) override {
-                //if (handler_ ) {
-                //    handler_->OnHttpResponse(HttpStatusCode::Request_Timeout, HTTP_STATUS_STRING(HttpStatusCode::Request_Timeout));
-                //}
+                if (reason)
+                {
+                    //LogInst.GameLogAndPrintWarning("Http response code = %d, url = %s, status = %s", eno, reqUrl_.c_str(), reason);
+                }
+                
                 if (onResponse_)
                 {
-                    onResponse_(HttpStatusCode::Request_Timeout, HTTP_STATUS_STRING(HttpStatusCode::Request_Timeout));
+                    onResponse_(HttpStatusCode::Bad_Request, HTTP_STATUS_STRING(HttpStatusCode::Bad_Request));
                 }
             }
 
             void OnTimeOut() {
+                //LogInst.GameLogAndPrintWarning("Http response code = %d, url = %s, status = %s", HttpStatusCode::Request_Timeout, reqUrl_.c_str(), HTTP_STATUS_STRING(HttpStatusCode::Request_Timeout));
                 if (onResponse_)
                 {
                     onResponse_(HttpStatusCode::Request_Timeout, HTTP_STATUS_STRING(HttpStatusCode::Request_Timeout));
@@ -139,9 +148,6 @@ namespace base
                 {
                     m_eventHandler->OnConnectionClose(this);
                 }
-                //if (handler_ ) {
-                //    handler_->OnHttpClose();
-                //}
                 Release();
             }
 
@@ -161,17 +167,24 @@ namespace base
                 m_timeoutSeconds = timeoutSeconds;
             }
 
+            void SetReqUrl(std::string reqUrl)
+            {
+                reqUrl_ = reqUrl;
+            }
+
         private:
             bool m_hasHead = false;
             bool m_hasBody = false;
 
             http_parser parser_;
             std::string resp_body_;
-            //HttpClientEventHandler* handler_;
             HttpResponseCallBack onResponse_;
             EventHandler* m_eventHandler = nullptr;
             int64_t m_lastActiveTs = 0;
             int m_timeoutSeconds = 30; //³¬Ê±ÃëÊý
+            std::vector<std::string> m_header_fields;
+            std::vector<std::string> m_header_values;
+            std::string reqUrl_;
 
         public:
             static int on_message_begin_cb(http_parser* parser) {
@@ -185,10 +198,14 @@ namespace base
             }
 
             static int on_header_field(http_parser* parser, const char* at, size_t len) {
+                HttpConnection* client = static_cast<HttpConnection*>(parser->data);
+                client->m_header_fields.emplace_back(at, len);
                 return 0;
             }
 
             static int on_header_value(http_parser* parser, const char* at, size_t len) {
+                HttpConnection* client = static_cast<HttpConnection*>(parser->data);
+                client->m_header_values.emplace_back(at, len);
                 return 0;
             }
 
@@ -204,15 +221,42 @@ namespace base
 
             static int on_message_complete_cb(http_parser* parser) {
                 HttpConnection* client = static_cast<HttpConnection*>(parser->data);
-                //if (client->handler_) {
-                //    client->handler_->OnHttpResponse((HttpStatusCode)parser->status_code, client->resp_body_.c_str());
-                //}
                 if (client->onResponse_)
                 {
-                    client->onResponse_((HttpStatusCode)parser->status_code, client->resp_body_.c_str());
+                    bool is_gzip = false;
+                    for (size_t i = 0; i < client->m_header_fields.size(); i++)
+                    {
+                        if (client->m_header_fields[i] == "Content-Encoding")
+                        {
+                            if (client->m_header_values.size() > i)
+                            {
+                                if (client->m_header_values[i] == "gzip")
+                                {
+                                    is_gzip = true;
+                                    Decode::GZIP gz;
+                                    gz.decompress((const uint8_t*)client->resp_body_.data(), client->resp_body_.length());
+                                    std::string tmp((char*)gz.data, gz.size);
+                                    client->onResponse_((HttpStatusCode)parser->status_code, tmp);
+                                }
+                            }
+                            break;
+                        }
+                    }
+                    if (!is_gzip)
+                    {
+                        client->onResponse_((HttpStatusCode)parser->status_code, client->resp_body_);
+                    }
                 }
-                //printf("%s\n", client->resp_body_.c_str());
-                printf("%s %u\n", "on_message_complete_cb", parser->status_code);
+
+                if ((HttpStatusCode)parser->status_code != base::http::HttpStatusCode::OK)
+                {
+                    //LogInst.GameLogAndPrintWarning("Http response code = %d, url = %s", parser->status_code, client->reqUrl_.c_str());
+                }
+                //else
+                //{
+                //    printf("Http response code = %d, url = %s\n", parser->status_code, client->reqUrl_.c_str());
+                //}
+
                 client->Close();
                 return 0;
             }
@@ -346,14 +390,44 @@ namespace base
             if ((urlParser.field_set & (1 << UF_PATH)) != 0) {
                 path.assign(url.c_str() + urlParser.field_data[UF_PATH].off, urlParser.field_data[UF_PATH].len);
             }
-            if ((urlParser.field_set && (1 << UF_QUERY)) != 0) {
+            if ((urlParser.field_set & (1 << UF_QUERY)) != 0) {
                 path.append("?");
                 path.append(url.c_str() + urlParser.field_data[UF_QUERY].off, urlParser.field_data[UF_QUERY].len);
             }
             return HttpClient::Error::OK;
         }
 
-        HttpClient::Error HttpClient::GetAsync(const string& url, const vector< pair< string, string > >& formParams, HttpResponseCallBack onResponse, int timeoutSecond)
+		void HttpClient::ShowLog(const std::string & url, const std::vector<std::pair<std::string, std::string>>& formParams)
+		{
+			string path(url);
+			string content;
+			for (size_t i = 0u; i < formParams.size(); ++i) {
+				const pair<string, string>& param = formParams[i];
+				content.append(UrlBuilder::UrlEncode(param.first));
+				content.append("=");
+				content.append(UrlBuilder::UrlEncode(param.second));
+				if (i < formParams.size() - 1u) {
+					content.append("&");
+				}
+			}
+
+			if (formParams.size() > 0)
+			{
+				if (path.find_last_of('?') == std::string::npos)
+				{
+					path.append("?");
+				}
+				else
+				{
+					path.append("&");
+				}
+			}
+
+			path.append(content);
+			//LogInst.GameLogAndPrintWarning("Http Request %s", path.c_str());
+		}
+
+		HttpClient::Error HttpClient::GetAsync(const string& url, const vector< pair< string, string > >& formParams, HttpResponseCallBack onResponse, int timeoutSecond)
         {
             string host;
             string path;
@@ -374,9 +448,22 @@ namespace base
                     content.append("&");
                 }
             }
+
+            if (formParams.size() > 0)
+            {
+                if (path.find_last_of('?') == std::string::npos)
+                {
+                    path.append("?");
+                }
+                else
+                {
+                    path.append("&");
+                }
+            }
+
             path.append(content);
 
-            cout << "req:" << host << ":" << port << path << endl;
+            //cout << "req:" << host << ":" << port << path << endl;
             auto callback = [this, host, path, port, onResponse, timeoutSecond](const DnsRecord& result) {
                 string ip = result.getIP();
                 if (ip.empty()) {
@@ -387,7 +474,11 @@ namespace base
                 }
                 else
                 {
+                    std::string reqUrl("http://");
+                    reqUrl.append(host).append(":").append(base::utils::convert(port)).append(path);
+
                     HttpConnection* conn = new HttpConnection(onResponse, m_impl);
+                    conn->SetReqUrl(reqUrl);
                     conn->WriteRequestHead(HttpMethod::GET, host, path);
                     conn->Connect(ip.c_str(), port);
                     conn->SetTimeoutSeconds(timeoutSecond);

@@ -1,7 +1,7 @@
 #ifndef BASE_HTTP_HTTPCLIENT_H
 #define BASE_HTTP_HTTPCLIENT_H
 
-#include "observer.h"
+#include "Observer.h"
 #include "constant.h"
 #include <vector>
 #include <unordered_map>
@@ -56,6 +56,7 @@ namespace base
                 BAD_URL,
             };
 
+			void ShowLog(const std::string& url, const std::vector<std::pair<std::string, std::string>>& formParams);
             Error GetAsync(const std::string& url, const std::vector<std::pair<std::string, std::string>>& formParams, HttpResponseCallBack onResponse, int timeoutSecond = 30);
             Error PostFormAsync(const std::string& url, const std::vector<std::pair<std::string, std::string>>& formParams, HttpResponseCallBack onResponse, int timeoutSecond = 30);
             Error PostJsonAsync(const std::string& url, const std::string& json, HttpResponseCallBack onResponse, int timeoutSecond = 30);

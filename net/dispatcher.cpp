@@ -2,7 +2,7 @@
 #include "eventio.h"
 #include <mutex>
 #include <math.h>
-#include "TimerMgr.h"
+#include "../../TimerMgr.h"
 
 base::Dispatcher* g_dispatcher = nullptr;
 
@@ -121,7 +121,7 @@ namespace base
 
         void Dispatcher::Dispatch()
         {
-            SOCKET maxfd = 0;
+            int maxfd = 0;
             int32_t BUSY_WEIGHT = wait_ * 2;
 
             struct timeval timeout;

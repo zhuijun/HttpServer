@@ -16,7 +16,7 @@
 #include "TimerMgr.h"
 //#include "Log.h"
 
-#include "gzip/gzip.hpp"
+#include "../gzip/gzip.hpp"
 
 namespace base
 {
@@ -105,7 +105,7 @@ namespace base
                     if (r != recvBuffer.DataSize()) {
                         if (onResponse_)
                         {
-                            onResponse_(HttpStatusCode::Not_Acceptable, HTTP_STATUS_STRING(HttpStatusCode::Not_Acceptable));
+                            onResponse_(HttpStatusCode::Not_Acceptable, HTTP_STATUS_STRING(HttpStatusCode::Not_Acceptable), GetReqUrl());
                         }
                         //return;
                     }
@@ -131,7 +131,7 @@ namespace base
                 
                 if (onResponse_)
                 {
-                    onResponse_(HttpStatusCode::Bad_Request, HTTP_STATUS_STRING(HttpStatusCode::Bad_Request));
+                    onResponse_(HttpStatusCode::Bad_Request, HTTP_STATUS_STRING(HttpStatusCode::Bad_Request), GetReqUrl());
                 }
             }
 
@@ -139,7 +139,7 @@ namespace base
                 //LogInst.GameLogAndPrintWarning("Http response code = %d, url = %s, status = %s", HttpStatusCode::Request_Timeout, reqUrl_.c_str(), HTTP_STATUS_STRING(HttpStatusCode::Request_Timeout));
                 if (onResponse_)
                 {
-                    onResponse_(HttpStatusCode::Request_Timeout, HTTP_STATUS_STRING(HttpStatusCode::Request_Timeout));
+                    onResponse_(HttpStatusCode::Request_Timeout, HTTP_STATUS_STRING(HttpStatusCode::Request_Timeout), GetReqUrl());
                 }
             }
 
@@ -170,6 +170,11 @@ namespace base
             void SetReqUrl(std::string reqUrl)
             {
                 reqUrl_ = reqUrl;
+            }
+
+            std::string& GetReqUrl()
+            {
+                return reqUrl_;
             }
 
         private:
@@ -236,7 +241,7 @@ namespace base
                                     Decode::GZIP gz;
                                     gz.decompress((const uint8_t*)client->resp_body_.data(), client->resp_body_.length());
                                     std::string tmp((char*)gz.data, gz.size);
-                                    client->onResponse_((HttpStatusCode)parser->status_code, tmp);
+                                    client->onResponse_((HttpStatusCode)parser->status_code, tmp, client->GetReqUrl());
                                 }
                             }
                             break;
@@ -244,7 +249,7 @@ namespace base
                     }
                     if (!is_gzip)
                     {
-                        client->onResponse_((HttpStatusCode)parser->status_code, client->resp_body_);
+                        client->onResponse_((HttpStatusCode)parser->status_code, client->resp_body_, client->GetReqUrl());
                     }
                 }
 
@@ -397,44 +402,16 @@ namespace base
             return HttpClient::Error::OK;
         }
 
-		void HttpClient::ShowLog(const std::string & url, const std::vector<std::pair<std::string, std::string>>& formParams)
-		{
-			string path(url);
-			string content;
-			for (size_t i = 0u; i < formParams.size(); ++i) {
-				const pair<string, string>& param = formParams[i];
-				content.append(UrlBuilder::UrlEncode(param.first));
-				content.append("=");
-				content.append(UrlBuilder::UrlEncode(param.second));
-				if (i < formParams.size() - 1u) {
-					content.append("&");
-				}
-			}
-
-			if (formParams.size() > 0)
-			{
-				if (path.find_last_of('?') == std::string::npos)
-				{
-					path.append("?");
-				}
-				else
-				{
-					path.append("&");
-				}
-			}
-
-			path.append(content);
-			//LogInst.GameLogAndPrintWarning("Http Request %s", path.c_str());
-		}
-
 		HttpClient::Error HttpClient::GetAsync(const string& url, const vector< pair< string, string > >& formParams, HttpResponseCallBack onResponse, int timeoutSecond)
         {
             string host;
             string path;
             int port;
             Error error = parseUrl(url, host, path, &port);
+            std::string reqUrl("http://");
+            reqUrl.append(host).append(":").append(base::utils::convert(port)).append(path);
             if (error != Error::OK) {
-                onResponse(HttpStatusCode::Bad_Request, "parseUrl fail");
+                onResponse(HttpStatusCode::Bad_Request, "parseUrl fail", reqUrl);
                 return error;
             }
 
@@ -462,21 +439,18 @@ namespace base
             }
 
             path.append(content);
-
+            reqUrl.append(content);
             //cout << "req:" << host << ":" << port << path << endl;
-            auto callback = [this, host, path, port, onResponse, timeoutSecond](const DnsRecord& result) {
+            auto callback = [this, host, path, port, reqUrl, onResponse, timeoutSecond](const DnsRecord& result) {
                 string ip = result.getIP();
                 if (ip.empty()) {
                     if (onResponse)
                     {
-                        onResponse(HttpStatusCode::No_Content, "dns resolve fail");
+                        onResponse(HttpStatusCode::No_Content, "dns resolve fail", reqUrl);
                     }
                 }
                 else
                 {
-                    std::string reqUrl("http://");
-                    reqUrl.append(host).append(":").append(base::utils::convert(port)).append(path);
-
                     HttpConnection* conn = new HttpConnection(onResponse, m_impl);
                     conn->SetReqUrl(reqUrl);
                     conn->WriteRequestHead(HttpMethod::GET, host, path);
@@ -497,8 +471,10 @@ namespace base
             string path;
             int port;
             Error error = parseUrl(url, host, path, &port);
+            std::string reqUrl("http://");
+            reqUrl.append(host).append(":").append(base::utils::convert(port)).append(path);
             if (error != Error::OK) {
-                onResponse(HttpStatusCode::Bad_Request, "parseUrl fail");
+                onResponse(HttpStatusCode::Bad_Request, "parseUrl fail", reqUrl);
                 return error;
             }
 
@@ -512,18 +488,20 @@ namespace base
                     content.append("&");
                 }
             }
+            reqUrl.append("=content=").append(content);
 
-            auto callback = [this, host, path, port, content, onResponse, timeoutSecond](const DnsRecord& result) {
+            auto callback = [this, host, path, port, content, reqUrl, onResponse, timeoutSecond](const DnsRecord& result) {
                 string ip = result.getIP();
                 if (ip.empty()) {
                     if (onResponse)
                     {
-                        onResponse(HttpStatusCode::No_Content, "dns resolve fail");
+                        onResponse(HttpStatusCode::No_Content, "dns resolve fail", reqUrl);
                     }
                 }
                 else
                 {
                     HttpConnection* conn = new HttpConnection(onResponse, m_impl);
+                    conn->SetReqUrl(reqUrl);
                     conn->WriteRequestHead(HttpMethod::POST, host, path);
                     conn->WriteRequestBodyWithForm(content);
                     conn->Connect(ip.c_str(), port);
@@ -543,22 +521,25 @@ namespace base
             string path;
             int port;
             Error error = parseUrl(url, host, path, &port);
+            std::string reqUrl("http://");
+            reqUrl.append(host).append(":").append(base::utils::convert(port)).append(path).append("=content=").append(json);
             if (error != Error::OK) {
-                onResponse(HttpStatusCode::Bad_Request, "parseUrl fail");
+                onResponse(HttpStatusCode::Bad_Request, "parseUrl fail", reqUrl);
                 return error;
             }
 
-            auto callback = [this, host, path, port, json, onResponse, timeoutSecond](const DnsRecord& result) {
+            auto callback = [this, host, path, port, json, reqUrl, onResponse, timeoutSecond](const DnsRecord& result) {
                 string ip = result.getIP();
                 if (ip.empty()) {
                     if (onResponse)
                     {
-                        onResponse(HttpStatusCode::No_Content, "dns resolve fail");
+                        onResponse(HttpStatusCode::No_Content, "dns resolve fail", reqUrl);
                     }
                 }
                 else
                 {
                     HttpConnection* conn = new HttpConnection(onResponse, m_impl);
+                    conn->SetReqUrl(reqUrl);
                     conn->WriteRequestHead(HttpMethod::POST, host, path);
                     conn->WriteRequestBodyWithJson(json);
                     conn->Connect(ip.c_str(), port);

@@ -4,7 +4,7 @@
 #include "Observer.h"
 #include "constant.h"
 #include <vector>
-#include <unordered_map>
+#include <map>
 #include <functional>
 
 namespace base
@@ -37,7 +37,7 @@ namespace base
         };
 
         typedef std::function<void()> HttpCloseCallBack;
-        typedef std::function<void(HttpStatusCode code, const std::string& body)> HttpResponseCallBack;
+        typedef std::function<void(HttpStatusCode code, const std::string& body, const std::string& request)> HttpResponseCallBack;
 
         class HttpConnection;
         class HttpClientImpl;
@@ -47,6 +47,7 @@ namespace base
             static HttpClient* Create();
             static void Destroy();
             static HttpClient* instance();
+            std::function<void(const std::string message)> log;
 
             void ResolveHostname(const std::string& hostname, std::function<void(const DnsRecord& result)> callback);
 
@@ -56,7 +57,6 @@ namespace base
                 BAD_URL,
             };
 
-			void ShowLog(const std::string& url, const std::vector<std::pair<std::string, std::string>>& formParams);
             Error GetAsync(const std::string& url, const std::vector<std::pair<std::string, std::string>>& formParams, HttpResponseCallBack onResponse, int timeoutSecond = 30);
             Error PostFormAsync(const std::string& url, const std::vector<std::pair<std::string, std::string>>& formParams, HttpResponseCallBack onResponse, int timeoutSecond = 30);
             Error PostJsonAsync(const std::string& url, const std::string& json, HttpResponseCallBack onResponse, int timeoutSecond = 30);
@@ -65,7 +65,7 @@ namespace base
             HttpClient();
             virtual ~HttpClient();
 
-            std::unordered_map<std::string, DnsRecord> dns_cache_;
+            std::map<std::string, DnsRecord> dns_cache_;
             HttpClientImpl * m_impl = nullptr;
         };
     }

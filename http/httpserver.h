@@ -3,7 +3,7 @@
 
 #include <string>
 #include <functional>
-#include <unordered_map>
+#include <map>
 #include "Observer.h"
 #include "constant.h"
 
@@ -25,9 +25,9 @@ namespace base
 
             HttpMethod method;
 
-            std::unordered_map<std::string, std::string> queries;
+            std::map<std::string, std::string> queries;
 
-            std::unordered_map<std::string, std::string> headers;
+            std::map<std::string, std::string> headers;
 
             std::string body;
 

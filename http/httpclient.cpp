@@ -114,12 +114,15 @@ namespace base
                 }
             }
 
-            void OnConnect() override {
+            virtual void OnBeginConnect() override{
                 m_lastActiveTs = g_dispatcher->GetTimestampCache();
                 if (m_eventHandler)
                 {
                     m_eventHandler->OnHttpRequest(this);
                 }
+            }
+
+            void OnConnect() override {
                 Flush();
             }
 
@@ -301,7 +304,7 @@ namespace base
             }
 
             void Start() {
-                m_aliveTimer = UnsafeTimerInst.AddStdFunctionTimeRepeat(0, bind(&HttpClientImpl::CheckConnectionIsAlive, this), 30);
+                m_aliveTimer = UnsafeTimerInst.AddStdFunctionTimeRepeat(0, bind(&HttpClientImpl::CheckConnectionIsAlive, this), 3);
             }
 
         private:

@@ -37,6 +37,16 @@ namespace base
             // bind
             rc = ::bind(listenfd, (sockaddr*)&serveraddr, sizeof(struct sockaddr_in));
             if (rc != 0) {
+#ifdef _WIN32
+                int err = WSAGetLastError();
+                if (err == WSAEWOULDBLOCK)
+                {
+                }
+#else
+                if (errno == EWOULDBLOCK)
+                {
+                }
+#endif // _WIN32
                 //LOG_ERROR("bind port fail, %s:%d\n", ipaddr, port);
                 return false;
             }

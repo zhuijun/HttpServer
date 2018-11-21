@@ -41,6 +41,7 @@ namespace base
 
         void Client::ConnectIp(const char* ipaddr, int port)
         {
+            OnBeginConnect();
             ipaddr_ = ipaddr;
             port_ = port;
             SOCKET clientfd = ::socket(AF_INET, SOCK_STREAM, 0);
@@ -123,10 +124,10 @@ namespace base
 
         void Client::OnEventIOClose()
         {
-            if (connect_) {
-                connect_ = false;
-                OnClose();
-            }
+            //if (connect_) {
+            connect_ = false;
+            OnClose();
+            //}
         }
 
         void Client::CheckIfConnectCompleted()

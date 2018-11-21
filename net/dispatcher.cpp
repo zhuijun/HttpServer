@@ -2,7 +2,7 @@
 #include "eventio.h"
 #include <mutex>
 #include <math.h>
-#include "../../TimerMgr.h"
+#include "TimerMgr.h"
 
 base::Dispatcher* g_dispatcher = nullptr;
 
@@ -176,7 +176,7 @@ namespace base
 
 				while (select_cnt > 0)
 				{
-                    maxfd = -1;
+                    maxfd = 0;
 					--select_cnt;
 					FD_ZERO(&fds_read);
 					FD_ZERO(&fds_write);

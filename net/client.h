@@ -75,6 +75,7 @@ namespace base
                 OnConnect();
             }
 
+            virtual void OnBeginConnect() {}
             virtual void OnConnect() = 0;
             virtual void OnConnectFail(int eno, const char* reason) = 0;
             virtual void OnClose() = 0;

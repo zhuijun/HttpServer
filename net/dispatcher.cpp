@@ -172,7 +172,7 @@ namespace base
                 UnsafeTimerInst.UpdateTimer();
 
 				int select_cnt = io_list_.size() / FD_SETSIZE  + 1;
-				timeout.tv_usec = wait_ * 1000 / select_cnt;
+				int wait_usec = wait_ * 1000 / select_cnt;
 
 				while (select_cnt > 0)
 				{
@@ -205,7 +205,9 @@ namespace base
 							}
 						}
 					}
-
+                    
+                    timeout.tv_sec = 0;
+                    timeout.tv_usec = wait_usec;
 					n = select(maxfd + 1, &fds_read, &fds_write, &fds_err, &timeout);
 
 					if (n <= -1) {

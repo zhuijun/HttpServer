@@ -33,8 +33,8 @@ int main(int argc, char* argv[])
     base::http::HttpClient::Create();
     base::http::HttpServer::Create();
 
+    //Http get请求示例
     base::Dispatcher::instance().ExecuteAtNextLoop([](){
-
             vector< pair< string, string > > formParams;
             formParams.emplace_back("name", "tt");
             formParams.emplace_back("format", "json");
@@ -47,6 +47,7 @@ int main(int argc, char* argv[])
             );
     });
 
+    //Http Api服务示例
     base::http::HttpServer::instance()->AddHandler("/hello", [](const base::http::Request& req){
         base::http::Response resp;
         resp.AddHeader("Content-Type", "application/json; charset=utf-8");

@@ -103,6 +103,7 @@ namespace base
             closed_io_list_.push(fd);
         }
 
+        //在逻辑线程执行cb
         void Dispatcher::ExecuteAtNextLoop(const std::function<void()>& cb)
         {
             impl_->Lock();

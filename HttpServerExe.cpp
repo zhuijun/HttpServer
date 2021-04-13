@@ -34,6 +34,7 @@ int main(int argc, char* argv[])
     base::http::HttpServer::Create();
 
     //Http get请求示例
+    //（如果在不同的线程执行请求操作，需要在ExecuteAtNextLoop函数内，以保证代码在主循环内执行）
     base::Dispatcher::instance().ExecuteAtNextLoop([](){
             vector< pair< string, string > > formParams;
             formParams.emplace_back("name", "tt");
@@ -56,8 +57,10 @@ int main(int argc, char* argv[])
         return true;
     });
 
+    //开始侦听端口
     base::http::HttpServer::instance()->Start("0.0.0.0", 8001);
 
+    //逻辑主循环
     base::Dispatcher::instance().Dispatch();
 
     base::thread::ThreadPool::getInstance()->stop();

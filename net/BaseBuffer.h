@@ -1,54 +1,59 @@
 
 #pragma once
 
-class BaseBuffer	 
+namespace base
 {
-private:
-	BaseBuffer( const BaseBuffer& );
-	BaseBuffer& operator=( const BaseBuffer& ); 
+    namespace net
+    {
+        class BaseBuffer
+        {
+        private:
+            BaseBuffer(const BaseBuffer&);
+            BaseBuffer& operator=(const BaseBuffer&);
 
-protected:
+        protected:
 
-	char*	m_pBuffer;
-	unsigned int	m_uiBufferSize,	m_uiHead, m_uiTail;
+            char*	m_pBuffer;
+            unsigned int	m_uiBufferSize, m_uiHead, m_uiTail;
 
-protected:
+        protected:
 
-	char* Head() const;
-	
-public:
+            char* Head() const;
 
-	operator char*();
+        public:
 
-	void Empty();
+            operator char*();
 
-	bool IsEmpty() const;
+            void Empty();
 
-	void Added(unsigned int);
+            bool IsEmpty() const;
 
-	void Removed(unsigned int);
+            void Added(unsigned int);
 
-	bool Add( const char*, unsigned int);
+            void Removed(unsigned int);
 
-	void MoveData();
+            bool Add(const char*, unsigned int);
 
-	char* Data() const { return Head(); }
+            void MoveData();
 
-	unsigned int DataSize() const;
+            char* Data() const { return Head(); }
 
-	unsigned int FreeSize() const;
+            unsigned int DataSize() const;
 
-	char* Tail() const;
+            unsigned int FreeSize() const;
 
-	unsigned int BufferSize() const;
+            char* Tail() const;
 
-    char* Buffer() const;
+            unsigned int BufferSize() const;
 
-	void InitBuffer(char* pBuffer, unsigned int uiSize);
+            char* Buffer() const;
 
-	BaseBuffer( char* pBuffer = nullptr, unsigned int uiSize = 0 );
+            void InitBuffer(char* pBuffer, unsigned int uiSize);
 
-	virtual ~BaseBuffer();
-};
+            BaseBuffer(char* pBuffer = nullptr, unsigned int uiSize = 0);
 
+            virtual ~BaseBuffer();
+        };
+    }
+}
 

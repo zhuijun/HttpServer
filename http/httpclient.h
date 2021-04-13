@@ -1,7 +1,7 @@
 #ifndef BASE_HTTP_HTTPCLIENT_H
 #define BASE_HTTP_HTTPCLIENT_H
 
-#include "Observer.h"
+#include "../base/Observer.h"
 #include "constant.h"
 #include <vector>
 #include <map>
@@ -47,7 +47,6 @@ namespace base
             static HttpClient* Create();
             static void Destroy();
             static HttpClient* instance();
-            std::function<void(const std::string message)> log;
 
             void ResolveHostname(const std::string& hostname, std::function<void(const DnsRecord& result)> callback);
 

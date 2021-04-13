@@ -8,12 +8,12 @@
 #include "http_parser.h"
 #include "hostnameresolver.h"
 #include "urlbuilder.h"
-#include "utils_string.h"
+#include "../base/utils_string.h"
 #include "../net/client.h"
 #include "../net/dispatcher.h"
 #include "../net/BaseBuffer.h"
 #include "../thread/threadpool.h"
-#include "TimerMgr.h"
+#include "../base/TimerMgr.h"
 //#include "Log.h"
 
 #include "../gzip/gzip.hpp"
@@ -411,10 +411,9 @@ namespace base
             string path;
             int port;
             Error error = parseUrl(url, host, path, &port);
-            std::string reqUrl("http://");
-            reqUrl.append(host).append(":").append(base::utils::convert(port)).append(path);
+            std::string fullUrl(url);
             if (error != Error::OK) {
-                onResponse(HttpStatusCode::Bad_Request, "parseUrl fail", reqUrl);
+                onResponse(HttpStatusCode::Bad_Request, "parseUrl fail", fullUrl);
                 return error;
             }
 
@@ -434,37 +433,39 @@ namespace base
                 if (path.find_last_of('?') == std::string::npos)
                 {
                     path.append("?");
+                    fullUrl.append("?");
                 }
                 else
                 {
                     path.append("&");
+                    fullUrl.append("?");
                 }
             }
 
             path.append(content);
-            reqUrl.append(content);
+            fullUrl.append(content);
             //cout << "req:" << host << ":" << port << path << endl;
-            auto callback = [this, host, path, port, reqUrl, onResponse, timeoutSecond](const DnsRecord& result) {
+            auto callback = [this, host, path, port, fullUrl, onResponse, timeoutSecond](const DnsRecord& result) {
                 string ip = result.getIP();
                 if (ip.empty()) {
                     if (onResponse)
                     {
-                        onResponse(HttpStatusCode::No_Content, "dns resolve fail", reqUrl);
+                        onResponse(HttpStatusCode::No_Content, "dns resolve fail", fullUrl);
                     }
                 }
                 else
                 {
                     HttpConnection* conn = new HttpConnection(onResponse, m_impl);
-                    conn->SetReqUrl(reqUrl);
+                    conn->SetReqUrl(fullUrl);
                     conn->WriteRequestHead(HttpMethod::GET, host, path);
                     conn->Connect(ip.c_str(), port);
                     conn->SetTimeoutSeconds(timeoutSecond);
                 }
             };
 
-            base::Dispatcher::instance().ExecuteAtNextLoop([this, host, callback]() {
+            //base::Dispatcher::instance().ExecuteAtNextLoop([this, host, callback]() {
                 ResolveHostname(host, callback);
-            } );
+            //} );
             return Error::OK;
         }
 
@@ -474,10 +475,9 @@ namespace base
             string path;
             int port;
             Error error = parseUrl(url, host, path, &port);
-            std::string reqUrl("http://");
-            reqUrl.append(host).append(":").append(base::utils::convert(port)).append(path);
+            std::string fullUrl(url);
             if (error != Error::OK) {
-                onResponse(HttpStatusCode::Bad_Request, "parseUrl fail", reqUrl);
+                onResponse(HttpStatusCode::Bad_Request, "parseUrl fail", fullUrl);
                 return error;
             }
 
@@ -491,20 +491,20 @@ namespace base
                     content.append("&");
                 }
             }
-            reqUrl.append("=content=").append(content);
+            fullUrl.append("=content=").append(content);
 
-            auto callback = [this, host, path, port, content, reqUrl, onResponse, timeoutSecond](const DnsRecord& result) {
+            auto callback = [this, host, path, port, content, fullUrl, onResponse, timeoutSecond](const DnsRecord& result) {
                 string ip = result.getIP();
                 if (ip.empty()) {
                     if (onResponse)
                     {
-                        onResponse(HttpStatusCode::No_Content, "dns resolve fail", reqUrl);
+                        onResponse(HttpStatusCode::No_Content, "dns resolve fail", fullUrl);
                     }
                 }
                 else
                 {
                     HttpConnection* conn = new HttpConnection(onResponse, m_impl);
-                    conn->SetReqUrl(reqUrl);
+                    conn->SetReqUrl(fullUrl);
                     conn->WriteRequestHead(HttpMethod::POST, host, path);
                     conn->WriteRequestBodyWithForm(content);
                     conn->Connect(ip.c_str(), port);
@@ -512,9 +512,9 @@ namespace base
                 }
             };
 
-            base::Dispatcher::instance().ExecuteAtNextLoop([this, host, callback]() {
+            //base::Dispatcher::instance().ExecuteAtNextLoop([this, host, callback]() {
                 ResolveHostname(host, callback);
-            });
+            //});
             return Error::OK;
         }
 
@@ -522,27 +522,28 @@ namespace base
         {
             string host;
             string path;
-            int port;
+            int port = 0;
             Error error = parseUrl(url, host, path, &port);
-            std::string reqUrl("http://");
-            reqUrl.append(host).append(":").append(base::utils::convert(port)).append(path).append("=content=").append(json);
+            std::string fullUrl(url);
             if (error != Error::OK) {
-                onResponse(HttpStatusCode::Bad_Request, "parseUrl fail", reqUrl);
+                onResponse(HttpStatusCode::Bad_Request, "parseUrl fail", fullUrl);
                 return error;
             }
 
-            auto callback = [this, host, path, port, json, reqUrl, onResponse, timeoutSecond](const DnsRecord& result) {
+            fullUrl.append("=content=").append(json);
+
+            auto callback = [this, host, path, port, json, fullUrl, onResponse, timeoutSecond](const DnsRecord& result) {
                 string ip = result.getIP();
                 if (ip.empty()) {
                     if (onResponse)
                     {
-                        onResponse(HttpStatusCode::No_Content, "dns resolve fail", reqUrl);
+                        onResponse(HttpStatusCode::No_Content, "dns resolve fail", fullUrl);
                     }
                 }
                 else
                 {
                     HttpConnection* conn = new HttpConnection(onResponse, m_impl);
-                    conn->SetReqUrl(reqUrl);
+                    conn->SetReqUrl(fullUrl);
                     conn->WriteRequestHead(HttpMethod::POST, host, path);
                     conn->WriteRequestBodyWithJson(json);
                     conn->Connect(ip.c_str(), port);
@@ -550,9 +551,9 @@ namespace base
                 }
             };
 
-            base::Dispatcher::instance().ExecuteAtNextLoop([this, host, callback]() {
+            //base::Dispatcher::instance().ExecuteAtNextLoop([this, host, callback]() {
                 ResolveHostname(host, callback);
-            });
+            //});
             return Error::OK;
         }
 

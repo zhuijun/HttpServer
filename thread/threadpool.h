@@ -1,7 +1,7 @@
 #ifndef BASE_THREAD_THREADPOOL_H
 #define BASE_THREAD_THREADPOOL_H
 
-#include "Global.h"
+#include "../base/Global.h"
 #include <memory>
 
 namespace base

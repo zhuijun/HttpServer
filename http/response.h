@@ -1,7 +1,7 @@
 #ifndef BASE_HTTP_RESPONSE_H_
 #define BASE_HTTP_RESPONSE_H_
 
-#include "Object.h"
+#include "../base/Object.h"
 #include "constant.h"
 #include <vector>
 #include "../net/BaseBuffer.h"
@@ -36,8 +36,8 @@ namespace base
             }
 
             virtual void Prepare() {};
-            virtual void FlushHead(BaseBuffer& pktout);
-            virtual void FlushBody(BaseBuffer& pktout);
+            virtual void FlushHead(base::net::BaseBuffer& pktout);
+            virtual void FlushBody(base::net::BaseBuffer& pktout);
 
             void SetContent(const std::string& content) {
                 m_content = content;

@@ -1,0 +1,185 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="base">
+      <UniqueIdentifier>{89300eca-8717-49d7-8819-7378883672c5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="gzip">
+      <UniqueIdentifier>{05792b37-6e53-4b51-b1bd-ba582122f091}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="http">
+      <UniqueIdentifier>{384f32eb-b399-444d-81f3-52a8ed2ab56c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="net">
+      <UniqueIdentifier>{09128f46-4504-4fcb-999e-977a6d7f2e4e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="thread">
+      <UniqueIdentifier>{af1b40d4-cd24-444f-9499-aa128554f5f3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="HttpServerExe.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="base\Object.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="base\Singleton.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="base\TimerMgr.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="http\constant.cpp">
+      <Filter>http</Filter>
+    </ClCompile>
+    <ClCompile Include="http\hostnameresolver.cpp">
+      <Filter>http</Filter>
+    </ClCompile>
+    <ClCompile Include="http\http_parser.c">
+      <Filter>http</Filter>
+    </ClCompile>
+    <ClCompile Include="http\httpclient.cpp">
+      <Filter>http</Filter>
+    </ClCompile>
+    <ClCompile Include="http\httpserver.cpp">
+      <Filter>http</Filter>
+    </ClCompile>
+    <ClCompile Include="http\jsonresponse.cpp">
+      <Filter>http</Filter>
+    </ClCompile>
+    <ClCompile Include="http\response.cpp">
+      <Filter>http</Filter>
+    </ClCompile>
+    <ClCompile Include="http\urlbuilder.cpp">
+      <Filter>http</Filter>
+    </ClCompile>
+    <ClCompile Include="net\BaseBuffer.cpp">
+      <Filter>net</Filter>
+    </ClCompile>
+    <ClCompile Include="net\client.cpp">
+      <Filter>net</Filter>
+    </ClCompile>
+    <ClCompile Include="net\dispatcher.cpp">
+      <Filter>net</Filter>
+    </ClCompile>
+    <ClCompile Include="net\eventio.cpp">
+      <Filter>net</Filter>
+    </ClCompile>
+    <ClCompile Include="net\listener.cpp">
+      <Filter>net</Filter>
+    </ClCompile>
+    <ClCompile Include="net\utils.cpp">
+      <Filter>net</Filter>
+    </ClCompile>
+    <ClCompile Include="thread\task.cpp">
+      <Filter>thread</Filter>
+    </ClCompile>
+    <ClCompile Include="thread\threadpool.cpp">
+      <Filter>thread</Filter>
+    </ClCompile>
+    <ClCompile Include="base\utils_string.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="base\Global.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\IDGenerator.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\Object.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\Observer.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\Singleton.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\TimerMgr.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="gzip\gzip.hpp">
+      <Filter>gzip</Filter>
+    </ClInclude>
+    <ClInclude Include="gzip\inflate.hpp">
+      <Filter>gzip</Filter>
+    </ClInclude>
+    <ClInclude Include="http\constant.h">
+      <Filter>http</Filter>
+    </ClInclude>
+    <ClInclude Include="http\hostnameresolver.h">
+      <Filter>http</Filter>
+    </ClInclude>
+    <ClInclude Include="http\http_parser.h">
+      <Filter>http</Filter>
+    </ClInclude>
+    <ClInclude Include="http\httpclient.h">
+      <Filter>http</Filter>
+    </ClInclude>
+    <ClInclude Include="http\httpserver.h">
+      <Filter>http</Filter>
+    </ClInclude>
+    <ClInclude Include="http\jsonresponse.h">
+      <Filter>http</Filter>
+    </ClInclude>
+    <ClInclude Include="http\response.h">
+      <Filter>http</Filter>
+    </ClInclude>
+    <ClInclude Include="http\urlbuilder.h">
+      <Filter>http</Filter>
+    </ClInclude>
+    <ClInclude Include="net\BaseBuffer.h">
+      <Filter>net</Filter>
+    </ClInclude>
+    <ClInclude Include="net\client.h">
+      <Filter>net</Filter>
+    </ClInclude>
+    <ClInclude Include="net\dispatcher.h">
+      <Filter>net</Filter>
+    </ClInclude>
+    <ClInclude Include="net\eventio.h">
+      <Filter>net</Filter>
+    </ClInclude>
+    <ClInclude Include="net\intrusive_list.h">
+      <Filter>net</Filter>
+    </ClInclude>
+    <ClInclude Include="net\listener.h">
+      <Filter>net</Filter>
+    </ClInclude>
+    <ClInclude Include="net\utils.h">
+      <Filter>net</Filter>
+    </ClInclude>
+    <ClInclude Include="thread\task.h">
+      <Filter>thread</Filter>
+    </ClInclude>
+    <ClInclude Include="thread\threadpool.h">
+      <Filter>thread</Filter>
+    </ClInclude>
+    <ClInclude Include="Header.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="base\utils_string.h">
+      <Filter>base</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="base\TimerMgr.inl">
+      <Filter>base</Filter>
+    </None>
+  </ItemGroup>
+</Project>

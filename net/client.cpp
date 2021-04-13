@@ -1,6 +1,6 @@
 #include "client.h"
 #include "utils.h"
-#include "utils_string.h"
+#include "../base/utils_string.h"
 #include <cerrno>
 #include <stdint.h>
 #include <string.h>

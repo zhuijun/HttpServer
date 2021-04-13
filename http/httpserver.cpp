@@ -2,13 +2,13 @@
 #include "http_parser.h"
 #include "response.h"
 #include "jsonresponse.h"
-#include "utils_string.h"
+#include "../base/utils_string.h"
 #include "../net/client.h"
 #include "../net/dispatcher.h"
 #include "../net/listener.h"
-#include "Object.h"
-#include "Global.h"
-#include "TimerMgr.h"
+#include "../base/Object.h"
+#include "../base/Global.h"
+#include "../base/TimerMgr.h"
 #include <string.h>
 
 namespace base
@@ -275,6 +275,7 @@ namespace base
                 bool ok = m_listener->Bind(ip, port);
                 if (!ok) {
                     //LOG_ERROR("bind ip=%s, port=%d", ip, port);
+                    assert(0);
                 }
                 m_aliveTimer = UnsafeTimerInst.AddStdFunctionTimeRepeat(0, bind(&HttpServerImpl::CheckConnectionIsAlive, this), 30);
             }

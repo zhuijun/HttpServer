@@ -2,7 +2,7 @@
 #define BASE_NET_CLIENT_H
 
 #include "eventio.h"
-#include "Observer.h"
+#include "../base/Observer.h"
 #include <string>
 #include <deque>
 #include <vector>

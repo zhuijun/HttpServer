@@ -1,5 +1,5 @@
 #include "response.h"
-#include "utils_string.h"
+#include "../base/utils_string.h"
 #include <string.h>
 
 namespace base
@@ -12,7 +12,7 @@ namespace base
         {
         }
 
-        void Response::FlushHead(BaseBuffer& pktout)
+        void Response::FlushHead(base::net::BaseBuffer& pktout)
         {
             string tmp;
 
@@ -43,7 +43,7 @@ namespace base
             pktout.Add("\r\n", 2);
         }
 
-        void Response::FlushBody(BaseBuffer& pktout)
+        void Response::FlushBody(base::net::BaseBuffer& pktout)
         {
             size_t left = m_content.size() - m_contentPos;
             if (left > 0) {

@@ -75,11 +75,32 @@ typedef unsigned int       ULONG;
 #define TRUE 1
 #define KERNEL_ASSERT
 #define SOCKET int
-#define _countof(a) sizeof(a)/sizeof(a[0])
 #define INVALID_SOCKET -1
 #define SOCKET_ERROR -1
 #define SD_BOTH SHUT_RDWR
 #define closesocket close
+
+#if defined (_M_X64) || defined (_M_ARM)
+#define _UNALIGNED __unaligned
+#else  /* defined (_M_X64) || defined (_M_ARM) */
+#define _UNALIGNED
+#endif  /* defined (_M_X64) || defined (_M_ARM) */
+
+//#define _countof(a) sizeof(a)/sizeof(a[0])
+/* _countof helper */
+#if !defined (_countof)
+#if !defined (__cplusplus)
+#define _countof(_Array) (sizeof(_Array) / sizeof(_Array[0]))
+#else  /* !defined (__cplusplus) */
+extern "C++"
+{
+    template <typename _CountofType, size_t _SizeOfArray>
+    char(*__countof_helper(_UNALIGNED _CountofType(&_Array)[_SizeOfArray]))[_SizeOfArray];
+#define _countof(_Array) (sizeof(*__countof_helper(_Array)) + 0)
+}
+#endif  /* !defined (__cplusplus) */
+#endif  /* !defined (_countof) */
+
 #endif
 
 #endif

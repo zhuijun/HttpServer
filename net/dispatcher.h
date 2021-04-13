@@ -9,8 +9,6 @@
 #include <time.h>
 
 #include "../Header.h"
-
-//#include "TimerMgr.h"
 #include "intrusive_list.h"
 
 namespace base
@@ -78,8 +76,6 @@ namespace base
             bool exit_;
             int64_t tick_last_;
             int64_t tick_;
-            //int64_t ts_begin_ = 0;
-            //int64_t tick_begin_ = 0;
             int wait_;
             uint64_t frame_no_;
             std::vector<std::function<void()>> execute_at_next_loop_;

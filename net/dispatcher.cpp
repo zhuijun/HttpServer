@@ -2,7 +2,7 @@
 #include "eventio.h"
 #include <mutex>
 #include <math.h>
-#include "TimerMgr.h"
+#include "../base/TimerMgr.h"
 
 base::Dispatcher* g_dispatcher = nullptr;
 
@@ -58,15 +58,6 @@ namespace base
 
         int64_t Dispatcher::UpdateTickCache()
         {
-            //if (ts_begin_ == 0)
-            //{
-            //    ts_begin_ = time(NULL);
-            //    tick_begin_ = GetTickCount64();
-            //}
-
-            //int64_t cur_tick = GetTickCount64();
-            //tick_ = ts_begin_ * 1000 + (cur_tick - tick_begin_);
-            //return tick_;
             tick_ = nowtick();
             return tick_;
         }
@@ -172,7 +163,7 @@ namespace base
                 UnsafeTimerInst.UpdateTimer();
 
 				int select_cnt = io_list_.size() / FD_SETSIZE  + 1;
-				int wait_usec = wait_ * 1000 / select_cnt;
+                int wait_usec = wait_ * 1000 / select_cnt;
 
 				while (select_cnt > 0)
 				{
@@ -205,7 +196,7 @@ namespace base
 							}
 						}
 					}
-                    
+
                     timeout.tv_sec = 0;
                     timeout.tv_usec = wait_usec;
 					n = select(maxfd + 1, &fds_read, &fds_write, &fds_err, &timeout);
